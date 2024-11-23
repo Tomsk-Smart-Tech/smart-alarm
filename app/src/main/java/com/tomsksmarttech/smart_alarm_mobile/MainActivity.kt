@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -70,6 +73,7 @@ data class bottomNavigationItem (
     }
 }
 
+
 @Composable
 fun BottomNavigationBar() {
     var navigationSelectedItem by remember {
@@ -113,13 +117,57 @@ fun BottomNavigationBar() {
             startDestination = Screens.Home.route,
             modifier = Modifier.padding(paddingValues = paddingValues)
         ) {
-            composable(Screens.Home.route) {
+            composable(
+                Screens.Home.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        (Screens.Alarm.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Music.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        (Screens.Alarm.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Music.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        else -> null
+                    }
+                }
+            ) {
                 HomeScreen().HomeScreen()
             }
-            composable(Screens.Alarm.route) {
+            composable(Screens.Alarm.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        (Screens.Home.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Music.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        (Screens.Home.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Music.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        else -> null
+                    }
+                }) {
                 AlarmScreen().AlarmScreen()
             }
-            composable(Screens.Music.route) {
+            composable(Screens.Music.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        (Screens.Home.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Alarm.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        (Screens.Home.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Alarm.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        else -> null
+                    }
+                }) {
                 MusicScreen().MusicScreen()
             }
         }
