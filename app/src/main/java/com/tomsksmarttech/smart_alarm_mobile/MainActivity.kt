@@ -25,6 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -55,6 +59,7 @@ data class bottomNavigationItem (
     val icon: ImageVector = Icons.Filled.Home,
     val route: String = ""
 ) {
+    @Composable
     fun bottomNavigationItems(): List<bottomNavigationItem> {
         return listOf(
             bottomNavigationItem(
@@ -63,11 +68,11 @@ data class bottomNavigationItem (
                 route = Screens.Home.route),
             bottomNavigationItem(
                 label = "Alarm",
-                icon = Icons.Filled.Warning,
+                icon = ImageVector.vectorResource(R.drawable.ic_alarm),
                 route = Screens.Alarm.route),
             bottomNavigationItem(
                 label = "Music",
-                icon = Icons.Filled.Call,
+                icon = ImageVector.vectorResource(R.drawable.ic_music),
                 route = Screens.Music.route)
         )
     }
@@ -134,7 +139,7 @@ fun BottomNavigationBar() {
                     }
                 }
             ) {
-                HomeScreen().HomeScreen()
+                HomeScreen()
             }
             composable(Screens.Alarm.route,
                 enterTransition = {
@@ -151,7 +156,7 @@ fun BottomNavigationBar() {
                         else -> null
                     }
                 }) {
-                AlarmScreen().AlarmScreen()
+                AlarmScreen()
             }
             composable(Screens.Music.route,
                 enterTransition = {
@@ -161,15 +166,25 @@ fun BottomNavigationBar() {
                         else -> null
                     }
                 },
+                popEnterTransition = {
+                    TODO()
+                },
                 exitTransition = {
                     when (targetState.destination.route) {
                         (Screens.Home.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
                         (Screens.Alarm.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
                         else -> null
                     }
-                }) {
-                MusicScreen().MusicScreen()
+                }
+            ) {
+                MusicScreen()
             }
         }
     }
+}
+
+@Composable
+@Preview
+fun BottomNavigationBarPreview() {
+    BottomNavigationBar()
 }

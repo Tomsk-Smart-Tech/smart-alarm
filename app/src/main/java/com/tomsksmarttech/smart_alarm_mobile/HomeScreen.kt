@@ -6,9 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.TextUnit
 
-class HomeScreen {
-    @Composable
-    fun HomeScreen() {
-        Text("This is a home screen", Modifier.fillMaxSize())
-    }
+
+@Composable
+fun HomeScreen() {
+    Text("This is a home screen", Modifier.fillMaxSize())
 }

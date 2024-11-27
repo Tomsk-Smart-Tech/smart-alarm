@@ -5,9 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
-class AlarmScreen {
-    @Composable
-    fun AlarmScreen() {
-        Text("This is an alarm screen", Modifier.fillMaxSize())
-    }
+@Composable
+fun AlarmScreen() {
+    Text("This is an alarm screen", Modifier.fillMaxSize())
 }
