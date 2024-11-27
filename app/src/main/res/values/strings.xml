@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">smart-alarm-mobile</string>
+    <string name="title_music">Music Library</string>
 </resources>
