@@ -1,6 +1,7 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,22 +24,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.PathSegment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import java.lang.reflect.Type
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        val sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE)
+        val gson = Gson()
+        val json = sharedPreferences.getString("lib", null)
+        val type:Type = object : TypeToken<SnapshotStateList<Audio?>?>() {}.type
+        viewModel.musicList = gson.fromJson(json, type) as List<Audio>?
+
+        if (viewModel.musicList == null) {
+            viewModel.musicList = viewModel.loadMusicLibrary(applicationContext)
+            Log.d("Library", viewModel.musicList.toString())
+        }
+
         setContent {
             SmartalarmmobileTheme {
                 BottomNavigationBar()
