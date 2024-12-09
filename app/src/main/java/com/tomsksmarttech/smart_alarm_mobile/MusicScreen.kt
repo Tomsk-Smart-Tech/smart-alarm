@@ -56,7 +56,7 @@ fun MusicScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicTopAppBar() {
-    var musicList by remember { mutableStateOf(listOf<com.tomsksmarttech.smart_alarm_mobile.Audio?>()) }
+    var musicList by remember { mutableStateOf(listOf<Audio?>()) }
     LaunchedEffect(Unit) {
         musicList = sharedData.musicList
         Log.d("CURRENTMUSIC", musicList.toString())
@@ -98,6 +98,7 @@ fun MusicTopAppBar() {
 
     Scaffold (
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             CenterAlignedTopAppBar(
                 modifier = Modifier.heightIn(max = 56.dp),
