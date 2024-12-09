@@ -6,14 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,39 +24,32 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.PathSegment
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.VectorPainter
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import java.lang.reflect.Type
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        val sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE)
-        val gson = Gson()
-        val json = sharedPreferences.getString("lib", null)
-        val type:Type = object : TypeToken<SnapshotStateList<Audio?>?>() {}.type
-        viewModel.musicList = gson.fromJson(json, type) as List<Audio>?
+//        val sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE)
+//        val gson = Gson()
+//        val json = sharedPreferences.getString("lib", null)
+//        val type:Type = object : TypeToken<List<Audio>>() {}.type
+//        viewModel.musicList = gson.fromJson(json, type) as List<Audio>
 
-        if (viewModel.musicList == null) {
-            viewModel.musicList = viewModel.loadMusicLibrary(applicationContext)
-            Log.d("Library", viewModel.musicList.toString())
+        if (sharedData.musicList.isEmpty()) {
+            sharedData.musicList = sharedData.loadMusicLibrary(applicationContext)
+            Log.d("Library", sharedData.musicList.toString())
         }
 
         setContent {

@@ -1,20 +1,15 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.provider.MediaStore
 import android.util.Log
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.ViewModel
-import com.google.gson.Gson
 import java.util.concurrent.TimeUnit
 
-class MainViewModel : ViewModel() {
+object sharedData {
 
-    var musicList : List<Audio>? = null
+    var musicList : List<Audio> = listOf()
 
-    fun loadMusicLibrary(ctx:Context): List<Audio>? {
+    fun loadMusicLibrary(ctx:Context): List<Audio> {
 //        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
         val selectionArgs = arrayOf(TimeUnit.MILLISECONDS.convert(5, TimeUnit.SECONDS).toString())
@@ -32,14 +27,15 @@ class MainViewModel : ViewModel() {
                 Log.d("ITERATION", "ITERATION")
                 val name = cursor.getString(nameColumn)
                 val duration = cursor.getInt(durationColumn)
-                musicList = musicList?.plus(Audio(name, duration))
+                musicList = musicList.plus(Audio(name, duration))
             }
         }
-        Log.d("LISTSIZE", musicList?.size.toString())
+        Log.d("LISTSIZE", musicList.size.toString())
         return musicList
     }
 
     fun saveLibrary(ctx:Context) {
 
     }
+
 }
