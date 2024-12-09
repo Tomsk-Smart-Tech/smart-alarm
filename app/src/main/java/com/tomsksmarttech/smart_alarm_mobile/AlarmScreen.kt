@@ -3,11 +3,11 @@ package com.tomsksmarttech.smart_alarm_mobile
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
@@ -15,12 +15,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -36,53 +41,80 @@ fun AlarmScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(alarms: List<Alarm>, onAddAlarm: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Будильники") })
-        LazyColumn {
-            items(alarms) { alarm ->
-                AlarmItem(alarm)
+//    Column(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp),
+            topBar = {
+                TopAppBar(title = { Text("Будильники") })
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onAddAlarm,
+                    modifier = Modifier
+//                .align(Alignment.End)
+                        .padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Alarm")
+                }
             }
-        }
-        FloatingActionButton(
-            onClick = onAddAlarm,
-            modifier = Modifier
-                .align(Alignment.End)
-                .padding(16.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Alarm")
+        ) { paddingValues ->
+            LazyColumn(
+                contentPadding = paddingValues,
+                modifier = Modifier.fillMaxSize()
+            ) { items(alarms.size) { alarm ->
+                AlarmItem(alarms[alarm])
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(alarm: Alarm) {
+    var checked by remember { mutableStateOf(alarm.isEnabled) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-       // elevation = 4.dp
-    ) {
+            .padding(6.dp),
+        ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = alarm.time,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Column(
+                modifier = Modifier.padding(2.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = alarm.time,
+                    style = MaterialTheme.typography.displayMedium
+                )
+
+                Text(
+                    text = alarm.label,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
             Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = if (alarm.isEnabled) "Вкл" else "Выкл",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (alarm.isEnabled) Color.Green else Color.Red
+
+            Switch(
+                checked = checked,
+                onCheckedChange = {
+                    checked = it
+                }
             )
+//            Text(
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = if (alarm.isEnabled) Color.Green else Color.Red
+//            )
         }
     }
 }
 data class Alarm(
-    val id: Int, // Уникальный идентификатор
-    val time: String, // Время будильника в формате "HH:mm"
-    val isEnabled: Boolean, // Активен ли будильник
-    val repeatDays: List<String>? = null, // Дни недели для повторения (например, ["Понедельник", "Среда"])
-    val label: String? = null // Название будильника
+    val id: Int,
+    val time: String, // "HH:mm"
+    var isEnabled: Boolean,
+    val repeatDays: List<String>? = null,
+    val label: String,
 )

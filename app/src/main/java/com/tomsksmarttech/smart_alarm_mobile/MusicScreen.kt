@@ -48,7 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.room.util.query
+//import androidx.room.util.query
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -68,7 +68,7 @@ fun MusicTopAppBar() {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             CenterAlignedTopAppBar(
-                modifier = Modifier.heightIn(max = 56.dp),
+//                modifier = Modifier.heightIn(max = 56.dp),
                 windowInsets = WindowInsets(
                     top = 0.dp,
                     bottom = 0.dp
