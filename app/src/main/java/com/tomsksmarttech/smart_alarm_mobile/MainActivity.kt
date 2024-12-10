@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -56,13 +57,13 @@ class MainActivity : ComponentActivity() {
 }
 
 
-sealed class Screens (val route: String) {
+sealed class Screens(val route: String) {
     data object Home : Screens("home_route")
     data object Alarm : Screens("alarm_route")
     data object Music : Screens("music_route")
 }
 
-data class BottomNavigationItem (
+data class BottomNavigationItem(
     val label: String = "",
     val icon: ImageVector = Icons.Filled.Home,
     val route: String = ""
@@ -71,17 +72,20 @@ data class BottomNavigationItem (
     fun bottomNavigationItems(): List<BottomNavigationItem> {
         return listOf(
             BottomNavigationItem(
-                label = "Home",
+                label = stringResource(R.string.home),
                 icon = Icons.Filled.Home,
-                route = Screens.Home.route),
+                route = Screens.Home.route
+            ),
             BottomNavigationItem(
-                label = "Alarm",
+                label = stringResource(R.string.alarm),
                 icon = ImageVector.vectorResource(R.drawable.ic_alarm),
-                route = Screens.Alarm.route),
+                route = Screens.Alarm.route
+            ),
             BottomNavigationItem(
-                label = "Music",
+                label = stringResource(R.string.music),
                 icon = ImageVector.vectorResource(R.drawable.ic_music),
-                route = Screens.Music.route)
+                route = Screens.Music.route
+            )
         )
     }
 }
@@ -95,7 +99,7 @@ fun BottomNavigationBar() {
 
     val navController = rememberNavController()
 
-    Scaffold (
+    Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
@@ -134,15 +138,31 @@ fun BottomNavigationBar() {
                 Screens.Home.route,
                 enterTransition = {
                     when (initialState.destination.route) {
-                        (Screens.Alarm.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
-                        (Screens.Music.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Alarm.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Music.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 },
                 exitTransition = {
                     when (targetState.destination.route) {
-                        (Screens.Alarm.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
-                        (Screens.Music.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Alarm.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Music.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 }
@@ -152,15 +172,31 @@ fun BottomNavigationBar() {
             composable(Screens.Alarm.route,
                 enterTransition = {
                     when (initialState.destination.route) {
-                        (Screens.Home.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
-                        (Screens.Music.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Home.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Music.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 },
                 exitTransition = {
                     when (targetState.destination.route) {
-                        (Screens.Home.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
-                        (Screens.Music.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Home.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Music.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 }) {
@@ -169,8 +205,16 @@ fun BottomNavigationBar() {
             composable(Screens.Music.route,
                 enterTransition = {
                     when (initialState.destination.route) {
-                        (Screens.Home.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
-                        (Screens.Alarm.route) -> slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, animationSpec = tween(700))
+                        (Screens.Home.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Alarm.route) -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 },
@@ -179,8 +223,16 @@ fun BottomNavigationBar() {
                 },
                 exitTransition = {
                     when (targetState.destination.route) {
-                        (Screens.Home.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
-                        (Screens.Alarm.route) -> slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, animationSpec = tween(700))
+                        (Screens.Home.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
+                        (Screens.Alarm.route) -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(700)
+                        )
+
                         else -> null
                     }
                 }

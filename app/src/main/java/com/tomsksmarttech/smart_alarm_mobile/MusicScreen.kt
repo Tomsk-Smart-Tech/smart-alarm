@@ -96,7 +96,7 @@ fun MusicTopAppBar() {
                 retriever.release()
 
                 // Добавляем аудио в список
-                musicList = musicList + Audio(name ?: "Без названия - Неизвестен", duration, uri)
+                musicList = musicList + Audio(name ?: context.getString(R.string.music_noname), duration, uri)
             } catch (e: Exception) {
                 Log.e("Error", "Failed to retrieve metadata: ${e.message}", e)
             }
@@ -123,29 +123,41 @@ fun MusicTopAppBar() {
                 ),
                 actions = {
                     IconButton(onClick = {}) {
-                        Icon(Icons.Filled.Search, contentDescription = "Поиск музыки")
+                        Icon(Icons.Filled.Search, contentDescription = "Music search")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {launcher.launch(arrayOf("audio/*"))}) {
-                Icon(Icons.Filled.Add, contentDescription = "Добаление музыки из устройства")
+                Icon(Icons.Filled.Add, contentDescription = "Add music from device")
             }
         }
     ) { innerPadding ->
         LazyColumn (
-            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
         ) {
             items(musicList) { audio ->
-                Card(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
-                    Column (modifier = Modifier.fillMaxHeight().padding(5.dp)) {
-                        Row (modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+                Card(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)) {
+                    Column (modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(5.dp)) {
+                        Row (modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp)) {
                             audio?.let { Text(it.name, textAlign = TextAlign.Left, modifier = Modifier.width(300.dp), overflow = TextOverflow.Ellipsis, maxLines = 1) }
                             Spacer(modifier = Modifier.width(5.dp))
-                            Text(audio?.duration.toString(), textAlign = TextAlign.Right)
+                            val mins = audio?.duration?.div(1000 * 60)
+                            val secs = (audio?.duration?.div(1000)?.rem(60))
+                            Text(String.format("%02d:%02d", mins, secs), textAlign = TextAlign.Right)
                         }
-                        Row(modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+                        Row(modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(5.dp)) {
                             Button(onClick = {
                                 if (audio != null && nowPlaying != audio.uri) {
                                     nowPlaying = null
@@ -168,7 +180,7 @@ fun MusicTopAppBar() {
                             Spacer(modifier = Modifier.width(10.dp))
                             Button(onClick = {  }) {
                                 Icon(imageVector = Icons.Filled.AddCircle, contentDescription = "Create new alarm")
-                                Text("Создать новый будильник")
+                                Text(stringResource(R.string.create_new_alarm), overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -177,11 +189,6 @@ fun MusicTopAppBar() {
             }
         }
     }
-}
-
-@Composable
-fun musicCard(audio: Audio, mediaPlayer: MediaPlayer, nowPlaying: Uri) {
-
 }
 
 data class Audio(

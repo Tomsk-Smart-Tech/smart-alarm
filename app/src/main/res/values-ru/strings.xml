@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">smart-alarm-mobile</string>
+    <string name="app_name">Мой будильник</string>
     <string name="title_music">Библиотека музыки</string>
+    <string name="create_new_alarm">Создать новый будильник</string>
+    <string name="music_noname">Без названия - Неизвестен</string>
+    <string name="home">Главная</string>
+    <string name="alarm">Будильники</string>
+    <string name="music">Музыка</string>
 </resources>
