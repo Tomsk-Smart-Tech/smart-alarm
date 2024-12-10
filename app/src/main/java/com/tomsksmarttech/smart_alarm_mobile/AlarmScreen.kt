@@ -38,8 +38,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.tomsksmarttech.smart_alarm_mobile.sharedData.addAlarm
-import com.tomsksmarttech.smart_alarm_mobile.sharedData.currentAlarmIndex
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -48,7 +48,7 @@ import java.util.Calendar
 @Composable
 fun AlarmScreen() {
     var alarms by remember {
-        sharedData.alarms
+        SharedData.alarms
     }
     AlarmListScreen(
         alarms = alarms,
