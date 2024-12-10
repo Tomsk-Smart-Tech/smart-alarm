@@ -1,17 +1,19 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import android.media.MediaMetadataRetriever
+import android.media.MediaPlayer
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -19,11 +21,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,9 +43,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,12 +65,14 @@ fun MusicScreen() {
 fun MusicTopAppBar() {
     var musicList by remember { mutableStateOf(listOf<Audio?>()) }
     LaunchedEffect(Unit) {
-        musicList = sharedData.musicList
+        musicList = SharedData.musicList
         Log.d("CURRENTMUSIC", musicList.toString())
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
     var result by remember { (mutableStateOf<Uri?>(null)) }
+    var mediaPlayer by remember { mutableStateOf(MediaPlayer()) }
+    var nowPlaying by remember { mutableStateOf<Uri?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it ->
         result = it
         result?.let { uri ->
@@ -87,7 +96,7 @@ fun MusicTopAppBar() {
                 retriever.release()
 
                 // Добавляем аудио в список
-                musicList = musicList + Audio(name ?: "Без названия - Неизвестен", duration)
+                musicList = musicList + Audio(name ?: "Без названия - Неизвестен", duration, uri)
             } catch (e: Exception) {
                 Log.e("Error", "Failed to retrieve metadata: ${e.message}", e)
             }
@@ -128,20 +137,57 @@ fun MusicTopAppBar() {
         LazyColumn (
             modifier = Modifier.padding(innerPadding).fillMaxSize(),
         ) {
-            items(musicList) { i ->
-                Row(modifier = Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    i?.let { Text(it.name, textAlign = TextAlign.Left, modifier = Modifier.width(300.dp), overflow = TextOverflow.Ellipsis, maxLines = 1) }
-                    Text(i?.duration.toString(), textAlign = TextAlign.Right)
+            items(musicList) { audio ->
+                Card(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+                    Column (modifier = Modifier.fillMaxHeight().padding(5.dp)) {
+                        Row (modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+                            audio?.let { Text(it.name, textAlign = TextAlign.Left, modifier = Modifier.width(300.dp), overflow = TextOverflow.Ellipsis, maxLines = 1) }
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(audio?.duration.toString(), textAlign = TextAlign.Right)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth().padding(5.dp)) {
+                            Button(onClick = {
+                                if (audio != null && nowPlaying != audio.uri) {
+                                    nowPlaying = null
+                                    mediaPlayer.stop()
+                                    mediaPlayer = MediaPlayer.create(context, audio.uri)
+                                    mediaPlayer.start()
+                                    nowPlaying = audio.uri
+                                } else if (audio != null && nowPlaying == audio.uri) {
+                                    nowPlaying = null
+                                    mediaPlayer.stop()
+                                }
+                            }) {
+                                var icon = Icons.Filled.PlayArrow
+                                if (nowPlaying == audio?.uri) {
+                                    icon = ImageVector.vectorResource(R.drawable.ic_pause)
+                                }
+                                Icon(imageVector = icon, contentDescription = "Play/Pause")
+//                                    Text("Воспроизвести")
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Button(onClick = {  }) {
+                                Icon(imageVector = Icons.Filled.AddCircle, contentDescription = "Create new alarm")
+                                Text("Создать новый будильник")
+                            }
+                        }
+                    }
                 }
-                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth().height(1.dp))
+//                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth().height(1.dp))
             }
         }
     }
 }
 
+@Composable
+fun musicCard(audio: Audio, mediaPlayer: MediaPlayer, nowPlaying: Uri) {
+
+}
+
 data class Audio(
     val name: String,
-    val duration: Int
+    val duration: Int,
+    val uri: Uri
 )
 
 

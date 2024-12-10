@@ -89,7 +89,6 @@ fun AlarmItem(alarm: Alarm) {
             .fillMaxWidth()
             .padding(6.dp)
             .clickable{
-
             },
         ) {
         Row(

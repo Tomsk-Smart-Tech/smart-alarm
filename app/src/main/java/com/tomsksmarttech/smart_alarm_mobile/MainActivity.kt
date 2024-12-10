@@ -7,10 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -28,8 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -47,9 +42,9 @@ class MainActivity : ComponentActivity() {
 //        val type:Type = object : TypeToken<List<Audio>>() {}.type
 //        viewModel.musicList = gson.fromJson(json, type) as List<Audio>
 
-        if (sharedData.musicList.isEmpty()) {
-            sharedData.musicList = sharedData.loadMusicLibrary(applicationContext)
-            Log.d("Library", sharedData.musicList.toString())
+        if (SharedData.musicList.isEmpty()) {
+            SharedData.musicList = SharedData.loadMusicLibrary(applicationContext)
+            Log.d("Library", SharedData.musicList.toString())
         }
 
         setContent {
@@ -67,23 +62,23 @@ sealed class Screens (val route: String) {
     data object Music : Screens("music_route")
 }
 
-data class bottomNavigationItem (
+data class BottomNavigationItem (
     val label: String = "",
     val icon: ImageVector = Icons.Filled.Home,
     val route: String = ""
 ) {
     @Composable
-    fun bottomNavigationItems(): List<bottomNavigationItem> {
+    fun bottomNavigationItems(): List<BottomNavigationItem> {
         return listOf(
-            bottomNavigationItem(
+            BottomNavigationItem(
                 label = "Home",
                 icon = Icons.Filled.Home,
                 route = Screens.Home.route),
-            bottomNavigationItem(
+            BottomNavigationItem(
                 label = "Alarm",
                 icon = ImageVector.vectorResource(R.drawable.ic_alarm),
                 route = Screens.Alarm.route),
-            bottomNavigationItem(
+            BottomNavigationItem(
                 label = "Music",
                 icon = ImageVector.vectorResource(R.drawable.ic_music),
                 route = Screens.Music.route)
@@ -104,7 +99,7 @@ fun BottomNavigationBar() {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
-                bottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
+                BottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = navigationSelectedItem == index,
                         label = {
