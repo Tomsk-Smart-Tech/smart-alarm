@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.annotation.SuppressLint
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.net.Uri
@@ -7,6 +8,7 @@ import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -60,10 +62,12 @@ fun MusicScreen() {
     MusicTopAppBar()
 }
 
+@SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicTopAppBar() {
     var musicList by remember { mutableStateOf(listOf<Audio?>()) }
+    val musicJob by remember { mutableStateOf(SharedData.loadMusicJob) }
     LaunchedEffect(Unit) {
         musicList = SharedData.musicList
         Log.d("CURRENTMUSIC", musicList.toString())
@@ -73,7 +77,7 @@ fun MusicTopAppBar() {
     var result by remember { (mutableStateOf<Uri?>(null)) }
     var mediaPlayer by remember { mutableStateOf(MediaPlayer()) }
     var nowPlaying by remember { mutableStateOf<Uri?>(null) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it ->
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         result = it
         result?.let { uri ->
             try {
@@ -134,60 +138,66 @@ fun MusicTopAppBar() {
             }
         }
     ) { innerPadding ->
-        LazyColumn (
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize(),
-        ) {
-            items(musicList) { audio ->
-                Card(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)) {
-                    Column (modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(5.dp)) {
-                        Row (modifier = Modifier
-                            .fillMaxWidth()
+        if (musicJob.isActive) {
+            Text("Загрузка вашей музыки...")
+        } else {
+            LazyColumn (
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+            ) {
+                items(musicList) { audio ->
+                    Card(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)) {
+                        Column (modifier = Modifier
+                            .fillMaxHeight()
                             .padding(5.dp)) {
-                            audio?.let { Text(it.name, textAlign = TextAlign.Left, modifier = Modifier.width(300.dp), overflow = TextOverflow.Ellipsis, maxLines = 1) }
-                            Spacer(modifier = Modifier.width(5.dp))
-                            val mins = audio?.duration?.div(1000 * 60)
-                            val secs = (audio?.duration?.div(1000)?.rem(60))
-                            Text(String.format("%02d:%02d", mins, secs), textAlign = TextAlign.Right)
-                        }
-                        Row(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp)) {
-                            Button(onClick = {
-                                if (audio != null && nowPlaying != audio.uri) {
-                                    nowPlaying = null
-                                    mediaPlayer.stop()
-                                    mediaPlayer = MediaPlayer.create(context, audio.uri)
-                                    mediaPlayer.start()
-                                    nowPlaying = audio.uri
-                                } else if (audio != null && nowPlaying == audio.uri) {
-                                    nowPlaying = null
-                                    mediaPlayer.stop()
-                                }
-                            }) {
-                                var icon = Icons.Filled.PlayArrow
-                                if (nowPlaying == audio?.uri) {
-                                    icon = ImageVector.vectorResource(R.drawable.ic_pause)
-                                }
-                                Icon(imageVector = icon, contentDescription = "Play/Pause")
-//                                    Text("Воспроизвести")
+                            Row (modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                audio?.let { Text(it.name, textAlign = TextAlign.Left, modifier = Modifier.width(300.dp), overflow = TextOverflow.Ellipsis, maxLines = 1) }
+                                Spacer(modifier = Modifier.width(5.dp))
+                                val mins = audio?.duration?.div(1000 * 60)
+                                val secs = (audio?.duration?.div(1000)?.rem(60))
+                                Text(String.format("%02d:%02d", mins, secs), textAlign = TextAlign.Right)
                             }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Button(onClick = {  }) {
-                                Icon(imageVector = Icons.Filled.AddCircle, contentDescription = "Create new alarm")
-                                Text(stringResource(R.string.create_new_alarm), overflow = TextOverflow.Ellipsis)
+                            Row(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp)) {
+                                Button(onClick = {
+                                    if (audio != null && nowPlaying != audio.uri) {
+                                        nowPlaying = null
+                                        mediaPlayer.stop()
+                                        mediaPlayer = MediaPlayer.create(context, audio.uri)
+                                        mediaPlayer.start()
+                                        nowPlaying = audio.uri
+                                    } else if (audio != null && nowPlaying == audio.uri) {
+                                        nowPlaying = null
+                                        mediaPlayer.stop()
+                                    }
+                                }) {
+                                    var icon = Icons.Filled.PlayArrow
+                                    if (nowPlaying == audio?.uri) {
+                                        icon = ImageVector.vectorResource(R.drawable.ic_pause)
+                                    }
+                                    Icon(imageVector = icon, contentDescription = "Play/Pause")
+//                                    Text("Воспроизвести")
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Button(onClick = { TODO("why") }) {
+                                    Icon(imageVector = Icons.Filled.AddCircle, contentDescription = "Create new alarm")
+                                    Text(stringResource(R.string.create_new_alarm), overflow = TextOverflow.Ellipsis)
+                                }
                             }
                         }
                     }
-                }
 //                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth().height(1.dp))
+                }
             }
         }
+
     }
 }
 

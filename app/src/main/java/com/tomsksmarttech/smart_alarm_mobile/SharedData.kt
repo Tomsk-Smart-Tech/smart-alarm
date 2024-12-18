@@ -5,12 +5,31 @@ import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import com.google.gson.Gson
+import kotlinx.coroutines.Job
+import java.io.File
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 object SharedData {
-
-    var musicList : List<Audio> = listOf()
-    var alarms = mutableStateOf(listOf<Alarm>(
+    val settingsList = arrayListOf(
+        "Smart alarm",
+        "Подключение к устройству",
+        "Передать музыку на устройство",
+        "Импортировать из календаря",
+        "Справка",
+        "Об устройстве",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+    )
+    lateinit var loadMusicJob : Job
+    var musicList: List<Audio> = listOf()
+    var alarms = mutableStateOf(
+        listOf<Alarm>(
             Alarm(id = 1, time = "07:00", isEnabled = true, label = "Подъём"),
             Alarm(id = 2, time = "08:30", isEnabled = false, label = "Работа")
         )
@@ -23,8 +42,7 @@ object SharedData {
 
     var currentAlarmIndex = alarms.value.size
 
-    fun loadMusicLibrary(ctx:Context): List<Audio> {
-//        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
+    fun loadMusicLibrary(ctx: Context): List<Audio> {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
         val selectionArgs = arrayOf(TimeUnit.MILLISECONDS.convert(5, TimeUnit.SECONDS).toString())
         val sortOrder = "${MediaStore.Audio.Media.DISPLAY_NAME} ASC"
@@ -33,7 +51,13 @@ object SharedData {
             MediaStore.Video.Media.DURATION,
             MediaStore.Audio.Media._ID
         )
-        val query = ctx.contentResolver.query(MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL), projection, selection, selectionArgs, sortOrder)
+        val query = ctx.contentResolver.query(
+            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
+            projection,
+            selection,
+            selectionArgs,
+            sortOrder
+        )
         query?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
@@ -41,7 +65,8 @@ object SharedData {
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
-                val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+                val uri =
+                    ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
                 Log.d("ITERATION", "ITERATION")
                 val name = cursor.getString(nameColumn)
                 val duration = cursor.getInt(durationColumn)
@@ -49,10 +74,15 @@ object SharedData {
             }
         }
         Log.d("LISTSIZE", musicList.size.toString())
+
+//        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
         return musicList
     }
 
-    fun saveLibrary(ctx:Context) {
+    fun saveListAsJson(list: Collection<Any>, filename: String) {
+        val gson = Gson()
+        val jsonString = gson.toJson(list)
+        File(filename).writeText(jsonString)
 
     }
 
