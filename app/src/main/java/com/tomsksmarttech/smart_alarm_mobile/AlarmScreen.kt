@@ -28,6 +28,7 @@ import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tomsksmarttech.smart_alarm_mobile.sharedData.addAlarm
+import com.tomsksmarttech.smart_alarm_mobile.sharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.sharedData.currentAlarmIndex
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -65,6 +67,9 @@ fun AlarmListScreen(
     onAlarmChange: (Alarm) -> Unit,
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(showDialog) {
+        Log.d("SHOWDIALOG", showDialog.toString())
+    }
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
@@ -94,17 +99,19 @@ fun AlarmListScreen(
         }
     }
     if (showDialog) {
+        Log.d("test", sharedData.alarms.toString())
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-//                val formattedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                Log.d("watttttt", timePickerState.toString())
                 showDialog = false
             },
-            onDismiss = { showDialog = false }
+            onDismiss = {
+                showDialog = false
+            }
         )
-        showDialog = false
+        Log.d("SHOWDIALOG2", showDialog.toString())
     }
-
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,12 +122,12 @@ fun AlarmItem(
     val haptic = LocalHapticFeedback.current
     var checked by remember { mutableStateOf(alarm.isEnabled) }
     var showDialog by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
     ) {
+
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -156,7 +163,6 @@ fun AlarmItem(
             DialClockDialog(
                 alarm = alarm,
                 onConfirm = { timePickerState ->
-//                    val formattedTime = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
                     onAlarmChange(alarm.copy(timePickerState.id, timePickerState.time, timePickerState.isEnabled, label = timePickerState.label))
                     showDialog = false
                 },
@@ -174,23 +180,25 @@ fun DialClockDialog(
     onDismiss: () -> Unit,
 ) {
     if (alarm == null) {
+        Log.d("test", "creating new alarm")
         val currentTime = Calendar.getInstance()
         val timePickerState = rememberTimePickerState(
             initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
             initialMinute = currentTime.get(Calendar.MINUTE),
             is24Hour = true,
         )
-
         TimePickerDialog(
             onDismiss = { onDismiss() },
             onConfirm = {
                 val time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                Log.d("test", time)
                 val newAlarm = Alarm(
                     id = generateNewAlarmId(),
                     time = time,
                     isEnabled = true,
                     label = "Новый будильник"
                 )
+                addAlarm(newAlarm)
                 onConfirm(newAlarm)
             }
         ) {
@@ -222,11 +230,9 @@ fun DialClockDialog(
         }
     }
 }
-
 fun generateNewAlarmId(): Int {
     return currentAlarmIndex++
 }
-
 @Composable
 fun TimePickerDialog(
     onDismiss: () -> Unit,
