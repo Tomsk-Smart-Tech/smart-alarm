@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
+import android.R.attr.onClick
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -11,10 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults.cardElevation
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -35,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,7 +55,6 @@ fun AlarmScreen() {
     val alarmsList = remember {
         SharedData.alarms.value
     }
-    val appContext = LocalContext.current.applicationContext
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
@@ -68,7 +70,6 @@ fun AlarmScreen() {
 fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
-//    alarmManager: SingleAlarmManager
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
@@ -145,11 +146,15 @@ fun AlarmItem(
     val haptic = LocalHapticFeedback.current
     var checked by remember { mutableStateOf(alarm.isEnabled) }
     var showDialog by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf (false) }
 
     Card(
+        shape = RoundedCornerShape(8.dp),
+        elevation = cardElevation(),
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
+            .clickable( onClick = { expanded = !expanded })
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -178,11 +183,18 @@ fun AlarmItem(
                     onAlarmChange(alarm.copy(isEnabled = checked))
 
                     if (checked) {
-                        alarmManager.setAlarm(alarm.id -1)
+                        alarmManager.setAlarm(alarm.id)
                     } else {
-                        alarmManager.cancelAlarm(alarm.id -1)
+                        alarmManager.cancelAlarm(alarm.id)
                     }
                 }
+            )
+        }
+        if (expanded) {
+            Text(
+                text = "Content Sample for Display on Expansion of Card",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(8.dp)
             )
         }
         if (showDialog) {

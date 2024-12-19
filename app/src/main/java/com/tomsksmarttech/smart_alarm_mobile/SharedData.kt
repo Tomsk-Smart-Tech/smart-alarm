@@ -52,6 +52,7 @@ object SharedData {
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
 
+    var lastAudio: Audio? = null
     var alarms = MutableStateFlow<MutableList<Alarm>>(
 //        mutableListOf(
 //        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
@@ -64,6 +65,10 @@ object SharedData {
     }
 
     var currentAlarmIndex = alarms.value.size
+    fun updateCurrAlarmIndex() {
+        currentAlarmIndex = alarms.value.size
+    }
+
     fun startLoadMusicJob(context: Context) {
         val scope = CoroutineScope(Dispatchers.IO)
         _loadMusicJob.value = scope.launch {

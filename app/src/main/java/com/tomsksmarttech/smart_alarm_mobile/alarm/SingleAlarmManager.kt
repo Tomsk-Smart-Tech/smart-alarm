@@ -1,12 +1,11 @@
 import android.app.AlarmManager as SystemAlarmManager
 import android.content.Context
-import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
-import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.util.Log
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import java.util.Calendar
 
@@ -25,22 +24,19 @@ object SingleAlarmManager {
         if (systemAlarmManager == null) {
             throw IllegalStateException("AlarmManager is not initialized. Call AlarmManager.init(context) first.")
         }
-
-//        val calendar: Calendar = Calendar.getInstance().apply {
-//            timeInMillis = System.currentTimeMillis()
-//            set(Calendar.HOUR_OF_DAY, hours)
-//            set(Calendar.MINUTE, minutes)
-//        }
         val calendar: Calendar = Calendar.getInstance().apply {
             timeInMillis = System.currentTimeMillis()
-//            set(Calendar.HOUR_OF_DAY, 14)
             set(Calendar.HOUR_OF_DAY, alarms.value[id].getHours().toInt())
             set(Calendar.MINUTE, alarms.value[id].getMinutes().toInt())
-        }
 
+        }
+        Log.d("TEST", "Launching Alarm: {$id}")
+        alarms.value[id].musicUri = SharedData.lastAudio?.uri.toString()
         val intent = Intent(appContext, AlarmReceiver::class.java).apply {
             action = "com.tomsksmarttech.ALARM_ACTION"
-            putExtra("alarm_id", id)
+            putExtra("alarm_id", id.toString())
+            Log.d("TEST", "SENDING " + alarms.value[id].musicUri.toString())
+            putExtra("RINGTONE_URI", alarms.value[id].musicUri)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -73,7 +69,6 @@ object SingleAlarmManager {
         systemAlarmManager?.cancel(pendingIntent)
     }
 }
-
 
 //object SingleAlarmManager {
 //    private var alarmMgr: SystemAlarmManager? = null
@@ -184,6 +179,5 @@ object SingleAlarmManager {
 //
 //
 //    fun cancelAlarm(i: Int) {
-//        TODO("WIP")
 //    }
 //}

@@ -61,15 +61,12 @@ class MainActivity : ComponentActivity() {
         }
         val tmp = loadListFromFile(this, key = "alarm2", Alarm::class.java)
         Log.d("ALARM", tmp.toString())
-        if (tmp != null) {
-            tmp.forEach { it: Alarm ->
-                Log.d("ALARM", it.toString())
-                SharedData.addAlarm(it)
-            }
+        tmp?.forEach { it: Alarm ->
+            Log.d("ALARM", it.toString())
+            SharedData.addAlarm(it)
         }
+        SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
-
-
 
         setContent {
             SmartalarmmobileTheme {
