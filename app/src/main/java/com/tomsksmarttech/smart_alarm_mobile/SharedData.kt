@@ -107,7 +107,7 @@ object SharedData {
                 _musicList.value += (Audio(name, duration, uri))
             }
         }
-        Log.d("LISTSIZE", musicList.value.size.toString())
+//        Log.d("LISTSIZE", musicList.value.size.toString())
 
 //        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
     }

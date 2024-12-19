@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
@@ -85,9 +87,6 @@ fun MusicTopAppBar() {
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
     }
-    var isMusicListEmpty by remember {
-        mutableStateOf(musicList.isEmpty())
-    }
     var isMusicListLoaded by remember {
         mutableStateOf(musicJob?.isCompleted)
     }
@@ -102,9 +101,6 @@ fun MusicTopAppBar() {
     LaunchedEffect(Unit) {
         if (context.checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             launcher.launch(permission)
-        }
-        if (musicJob?.isCompleted == true) {
-            isMusicListEmpty = musicList.isEmpty()
         }
         isMusicListLoaded = musicJob?.isCompleted
     }
@@ -171,6 +167,7 @@ fun MusicTopAppBar() {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 10.dp),
+                                shape = RoundedCornerShape(15.dp),
                                 placeholder = { Text(text = "Поиск музыки") }
                             )
                         }
@@ -179,12 +176,11 @@ fun MusicTopAppBar() {
             )
         }
     ) { innerPadding ->
-        if (isMusicListLoaded == false) {
-            Text("Загрузка вашей музыки...", modifier = Modifier.padding(paddingValues = innerPadding))
-        } else if (!isPermissionGranted) {
-            Text("Разрешение на доступ к музыке не предоставлено", modifier = Modifier.padding(paddingValues = innerPadding))
-        } else if (isMusicListEmpty) {
-            Text("Ваша библиотека музыки пуста", modifier = Modifier.padding(paddingValues = innerPadding))
+        if (!isPermissionGranted) {
+            Text(
+                "Разрешение на доступ к музыке не предоставлено",
+                modifier = Modifier.padding(paddingValues = innerPadding)
+            )
         } else {
             MusicLibrary(innerPadding, context, musicList, isSearchClicked, searchedText)
         }
@@ -199,11 +195,26 @@ data class Audio(
 )
 
 @Composable
-fun MusicLibrary(innerPadding : androidx.compose.foundation.layout.PaddingValues, context: android.content.Context, musicList: List<Audio>, isSearchClicked: Boolean = false, searchedText: String = "") {
+fun MusicLibrary(
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    context: android.content.Context,
+    musicList: List<Audio>,
+    isSearchClicked: Boolean = false,
+    searchedText: String = ""
+) {
     var mediaPlayer by remember { mutableStateOf(MediaPlayer()) }
+    var isPlaying by remember { mutableStateOf(true) }
     var nowPlaying by remember { mutableStateOf<Uri?>(null) }
     var showDialog by remember {
         mutableStateOf(false)
+    }
+    mediaPlayer.setOnCompletionListener {
+        isPlaying = false
+    }
+    if (SharedData.loadMusicJob.collectAsState().value?.isCompleted == true && musicList.isEmpty()) {
+        Text("Музыка не найдена", modifier = Modifier.padding(innerPadding))
+    } else if (SharedData.loadMusicJob.collectAsState().value?.isCompleted == false) {
+        Text("Загрузка библиотеки...", modifier = Modifier.padding(innerPadding))
     }
     LazyColumn(
         modifier = Modifier
@@ -239,16 +250,21 @@ fun MusicLibrary(innerPadding : androidx.compose.foundation.layout.PaddingValues
                         Text(
                             audio.name,
                             textAlign = TextAlign.Left,
-                            modifier = Modifier.width(300.dp),
+                            modifier = Modifier.width(300.dp).basicMarquee(),
                             overflow = TextOverflow.Ellipsis,
-                            maxLines = 1
+                            maxLines = 1,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         val mins = audio.duration.div(1000 * 60)
                         val secs = (audio.duration.div(1000).rem(60))
                         Text(
                             String.format("%02d:%02d", mins, secs),
-                            textAlign = TextAlign.Right
+                            textAlign = TextAlign.Right,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                            maxLines = 1,
                         )
                     }
                     Row(
@@ -257,26 +273,39 @@ fun MusicLibrary(innerPadding : androidx.compose.foundation.layout.PaddingValues
                             .padding(5.dp)
                     ) {
                         Button(onClick = {
+                            Log.d("IS_PLAYING", mediaPlayer.isPlaying.toString())
                             if (nowPlaying != audio.uri) {
+                                if (mediaPlayer.isPlaying) {
+                                    mediaPlayer.stop()
+                                    mediaPlayer.reset()
+                                }
                                 nowPlaying = null
-                                mediaPlayer.stop()
                                 mediaPlayer = MediaPlayer.create(context, audio.uri)
                                 mediaPlayer.start()
                                 nowPlaying = audio.uri
+                                isPlaying = true
                             } else if (nowPlaying == audio.uri) {
                                 nowPlaying = null
                                 mediaPlayer.stop()
+                                isPlaying = false
                             }
                         }) {
-                            var icon = Icons.Filled.PlayArrow
-                            if (nowPlaying == audio.uri) {
-                                icon = ImageVector.vectorResource(R.drawable.ic_pause)
+                            if (nowPlaying == audio.uri && isPlaying) {
+                                Icon(
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_pause),
+                                    contentDescription = "Play/Pause"
+                                )
+
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = "Play/Pause"
+                                )
                             }
-                            Icon(imageVector = icon, contentDescription = "Play/Pause")
 //                                    Text("Воспроизвести")
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Button(onClick = {showDialog = true}) {
+                        Button(onClick = { showDialog = true }) {
                             Icon(
                                 imageVector = Icons.Filled.AddCircle,
                                 contentDescription = "Create new alarm"

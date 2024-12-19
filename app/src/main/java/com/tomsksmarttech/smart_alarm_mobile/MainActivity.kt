@@ -270,9 +270,6 @@ fun BottomNavigationBar() {
                         else -> null
                     }
                 },
-                popEnterTransition = {
-                    TODO()
-                },
                 exitTransition = {
                     when (targetState.destination.route) {
                         (Screens.Home.route) -> slideOutOfContainer(
