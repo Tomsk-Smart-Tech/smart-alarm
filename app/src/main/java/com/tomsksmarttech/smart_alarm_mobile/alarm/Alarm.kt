@@ -1,5 +1,8 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
+import android.util.Log
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
+
 data class Alarm(
     val id: Int,
     var time: String, // "HH:mm"
@@ -9,9 +12,19 @@ data class Alarm(
     var musicUri: String? = null
 ) {
     fun getHours(): String {
+        try {
         return time.substring(0,2)
+        } catch (e: Exception) {
+            Log.e("ERROR", "er ${time} : ${alarms.value}")
+            return ""
+        }
     }
     fun getMinutes(): String {
-        return time.substring(3,4)
+        try {
+            return time.substring(3, 4)
+        } catch (e: Exception) {
+            Log.e("ERROR", "er ${time} : ${alarms.value}")
+            return ""
+        }
     }
 }

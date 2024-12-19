@@ -25,13 +25,6 @@ class AlarmService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Будильник"
-        val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
-
-        if (!ringtoneUri.isNullOrEmpty()) {
-            playRingtone(ringtoneUri)
-        }
-
-        wakeScreen()
         val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
             .setContentTitle(alarmLabel)
             .setContentText("Будильник сработал")
@@ -43,27 +36,38 @@ class AlarmService : Service() {
 
         startForeground(1, notification)
 
+        val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
+        if (!ringtoneUri.isNullOrEmpty()) {
+            playRingtone(ringtoneUri)
+        }
+
+        wakeScreen()
         return START_STICKY
     }
-
     private fun createNotificationChannel(context: Context) {
+        val channelId = "ALARM_CHANNEL"
         val channel = NotificationChannel(
-            "ALARM_CHANNEL",
+            channelId,
             "Будильник",
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
             description = "Канал для будильника"
+            enableLights(true)
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 1000, 500, 1000)
         }
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        val notificationManager =
+            context.getSystemService(NotificationManager::class.java)
         notificationManager?.createNotificationChannel(channel)
     }
+
 
     private fun playRingtone(uriString: String) {
         try {
             val uri = Uri.parse(uriString)
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(this@AlarmService, uri)
-                isLooping = true
+                isLooping = false
                 prepare()
                 start()
             }
@@ -89,6 +93,5 @@ class AlarmService : Service() {
         mediaPlayer = null
         wakeLock?.release()
     }
-
     override fun onBind(intent: Intent): IBinder? = null
 }

@@ -65,9 +65,8 @@ class MainActivity : ComponentActivity() {
             Log.d("ALARM", it.toString())
             SharedData.addAlarm(it)
         }
+        SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
-
-
 
         setContent {
             SmartalarmmobileTheme {

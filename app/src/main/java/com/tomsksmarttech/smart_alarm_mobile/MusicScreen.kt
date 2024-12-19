@@ -61,10 +61,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.tomsksmarttech.smart_alarm_mobile.alarm.SetDialDialog
+import com.tomsksmarttech.smart_alarm_mobile.alarm.generateNewAlarmId
+import kotlinx.coroutines.flow.update
+import java.util.Calendar
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -289,15 +295,16 @@ fun MusicLibrary(innerPadding : androidx.compose.foundation.layout.PaddingValues
                     }
                 }
             }
-
-//                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth().height(1.dp))
+            SharedData.lastAudio = audio
         }
     }
     if (showDialog) {
         SetDialDialog(showDialog = remember { mutableStateOf(showDialog) })
+        val alarmsState by alarms.collectAsState()
+        val lastAlarm = alarmsState.lastOrNull()
+        Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
     }
 }
-
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
