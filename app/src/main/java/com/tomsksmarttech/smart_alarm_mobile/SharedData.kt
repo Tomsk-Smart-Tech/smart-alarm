@@ -1,14 +1,34 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.app.Activity
+import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.collection.mutableFloatListOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import androidx.core.net.toFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import java.io.File
+import java.util.concurrent.TimeUnit
+
 object SharedData {
     val settingsList = arrayListOf(
         "Smart alarm",
@@ -24,8 +44,14 @@ object SharedData {
         "E",
         "F"
     )
-    var loadMusicJob: Job? = null
-    var musicList: List<Audio> = listOf()
+
+    private val _loadMusicJob = MutableStateFlow<Job?>(null)
+    val loadMusicJob: StateFlow<Job?> = _loadMusicJob
+
+
+    private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
+    val musicList: StateFlow<List<Audio>> = _musicList
+
     var alarms = MutableStateFlow<MutableList<Alarm>>(
 //        mutableListOf(
 //        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
@@ -38,8 +64,19 @@ object SharedData {
     }
 
     var currentAlarmIndex = alarms.value.size
+    fun startLoadMusicJob(context: Context) {
+        val scope = CoroutineScope(Dispatchers.IO)
+        _loadMusicJob.value = scope.launch {
+            loadMusicLibrary(context)
+        }
+    }
 
-    fun loadMusicLibrary(ctx: Context): List<Audio> {
+    fun addMusic(newMusic: Audio) {
+        _musicList.value += newMusic
+    }
+
+
+    fun loadMusicLibrary(ctx: Context) {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
         val selectionArgs = arrayOf(1.toString())
         val sortOrder = "${MediaStore.Audio.Media.DISPLAY_NAME} ASC"
@@ -67,13 +104,25 @@ object SharedData {
 //                Log.d("ITERATION", "ITERATION")
                 val name = cursor.getString(nameColumn)
                 val duration = cursor.getInt(durationColumn)
-                musicList = musicList.plus(Audio(name, duration, uri))
+                _musicList.value += (Audio(name, duration, uri))
             }
         }
-        Log.d("LISTSIZE", musicList.size.toString())
+        Log.d("LISTSIZE", musicList.value.size.toString())
 
 //        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
-        return musicList
+    }
+
+    fun checkPermission(
+        context: Context,
+        permission: String
+    ): Boolean {
+        val permissionCheckResult = ContextCompat.checkSelfPermission(context, permission)
+        if (permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
+            return true
+        } else {
+            // Request a permission
+            return false
+        }
     }
 
 

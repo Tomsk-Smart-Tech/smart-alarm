@@ -1,10 +1,15 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,13 +44,21 @@ import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.lang.reflect.Type
+
 
 
 class MainActivity : ComponentActivity() {
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
+        if (SharedData.checkPermission(this, audioPermission)) {
+            SharedData.startLoadMusicJob(applicationContext)
+        }
         val tmp = loadListFromFile(this, key = "alarm2", Alarm::class.java)
         Log.d("ALARM", tmp.toString())
         tmp?.forEach { it: Alarm ->
@@ -54,10 +67,7 @@ class MainActivity : ComponentActivity() {
         }
         SingleAlarmManager.init(this)
 
-        val scope = CoroutineScope(Dispatchers.IO)
-        SharedData.loadMusicJob = scope.launch {
-            musicList = SharedData.loadMusicLibrary(applicationContext)
-        }
+
 
         setContent {
             SmartalarmmobileTheme {
@@ -130,6 +140,7 @@ data class BottomNavigationItem(
 }
 
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun BottomNavigationBar() {
     var navigationSelectedItem by remember {
@@ -282,6 +293,7 @@ fun BottomNavigationBar() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 @Preview
 fun BottomNavigationBarPreview() {
