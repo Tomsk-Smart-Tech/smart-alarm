@@ -66,7 +66,7 @@ fun MusicScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicTopAppBar() {
-    var musicList by remember { mutableStateOf(listOf<Audio?>()) }
+    var musicList by remember { mutableStateOf(listOf<Audio>()) }
     val musicJob by remember { mutableStateOf(SharedData.loadMusicJob) }
     LaunchedEffect(Unit) {
         musicList = SharedData.musicList
@@ -74,38 +74,8 @@ fun MusicTopAppBar() {
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
-    var result by remember { (mutableStateOf<Uri?>(null)) }
     var mediaPlayer by remember { mutableStateOf(MediaPlayer()) }
     var nowPlaying by remember { mutableStateOf<Uri?>(null) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        result = it
-        result?.let { uri ->
-            try {
-                // Используем MediaMetadataRetriever для получения информации об аудиофайле
-                val retriever = MediaMetadataRetriever()
-                retriever.setDataSource(context, uri)
-
-                // Извлекаем метаданные
-                val cursor = context.contentResolver.query(uri, null, null, null, null)
-                val name = cursor?.use { cur ->
-                    val nameIndex = cur.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1 && cur.moveToFirst()) {
-                        cur.getString(nameIndex)
-                    } else null
-                }
-                val duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-                    ?.toIntOrNull() ?: 0
-
-                // Освобождаем ресурсы MediaMetadataRetriever
-                retriever.release()
-
-                // Добавляем аудио в список
-                musicList = musicList + Audio(name ?: context.getString(R.string.music_noname), duration, uri)
-            } catch (e: Exception) {
-                Log.e("Error", "Failed to retrieve metadata: ${e.message}", e)
-            }
-        }
-    }
 
 
 
@@ -131,14 +101,9 @@ fun MusicTopAppBar() {
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {launcher.launch(arrayOf("audio/*"))}) {
-                Icon(Icons.Filled.Add, contentDescription = "Add music from device")
-            }
         }
     ) { innerPadding ->
-        if (musicJob.isActive) {
+        if (musicJob?.isActive == true) {
             Text("Загрузка вашей музыки...")
         } else {
             LazyColumn (

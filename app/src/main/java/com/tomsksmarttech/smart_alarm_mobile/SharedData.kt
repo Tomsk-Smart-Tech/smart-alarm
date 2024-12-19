@@ -1,11 +1,19 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.app.Activity
+import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.content.Intent
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.net.toFile
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Job
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -26,7 +34,7 @@ object SharedData {
         "E",
         "F"
     )
-    lateinit var loadMusicJob : Job
+    var loadMusicJob: Job? = null
     var musicList: List<Audio> = listOf()
     var alarms = mutableStateOf(
         listOf<Alarm>(
@@ -44,7 +52,7 @@ object SharedData {
 
     fun loadMusicLibrary(ctx: Context): List<Audio> {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
-        val selectionArgs = arrayOf(TimeUnit.MILLISECONDS.convert(5, TimeUnit.SECONDS).toString())
+        val selectionArgs = arrayOf(1.toString())
         val sortOrder = "${MediaStore.Audio.Media.DISPLAY_NAME} ASC"
         val projection = arrayOf(
             MediaStore.Video.Media.DISPLAY_NAME,
@@ -79,11 +87,30 @@ object SharedData {
         return musicList
     }
 
-    fun saveListAsJson(list: Collection<Any>, filename: String) {
-        val gson = Gson()
-        val jsonString = gson.toJson(list)
-        File(filename).writeText(jsonString)
 
+
+    fun <T> saveListAsJson(context: Context, gson: Gson, list: Collection<T>, key: String) {
+        val sharedPreferences =
+            context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
+        val jsonString = gson.toJson(list)
+        sharedPreferences.edit().clear().putString(key, jsonString).apply()
     }
 
+    fun <T> loadListFromFile(
+        context: Context,
+        gson: Gson,
+        key: String,
+        clazz: Class<T>
+    ): Collection<T>? {
+        try {
+            val sharedPreferences =
+                context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
+            val jsonString = sharedPreferences.getString(key, null) ?: return null
+            val type = TypeToken.getParameterized(List::class.java, clazz).type
+            return gson.fromJson(jsonString, type)
+        } catch (e: Exception) {
+            Log.e("Exception: ", e.toString())
+            return null
+        }
+    }
 }

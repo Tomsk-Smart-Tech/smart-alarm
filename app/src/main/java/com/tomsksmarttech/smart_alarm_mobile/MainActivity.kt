@@ -1,5 +1,8 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -31,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
@@ -39,25 +43,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.lang.reflect.Type
 
+
+
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val sharedPreferences = getSharedPreferences("shared preferences", MODE_PRIVATE)
-        val gson = Gson()
-        val json = sharedPreferences.getString("lib", null)
-        val type: Type = object : TypeToken<List<Audio>>() {}.type
-        musicList = gson.fromJson(json, type) as List<Audio>
 
-
-
-        if (musicList.isEmpty()) {
-            val scope = CoroutineScope(Dispatchers.IO)
-            SharedData.loadMusicJob = scope.launch {
-                SharedData.musicList = SharedData.loadMusicLibrary(applicationContext)
-            }
-//            Log.d("Library", SharedData.musicList.toString())
+        val scope = CoroutineScope(Dispatchers.IO)
+        SharedData.loadMusicJob = scope.launch {
+            musicList = SharedData.loadMusicLibrary(applicationContext)
         }
 
         setContent {
@@ -66,6 +63,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
 
