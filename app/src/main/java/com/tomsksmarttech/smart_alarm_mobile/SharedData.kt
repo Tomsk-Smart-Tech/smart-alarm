@@ -3,24 +3,25 @@ package com.tomsksmarttech.smart_alarm_mobile
 import android.content.Context
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import java.util.concurrent.TimeUnit
 
-object sharedData {
+object SharedData {
 
     var musicList : List<Audio> = listOf()
-    var alarms = mutableStateOf(listOf<Alarm>(
-            Alarm(id = 1, time = "07:00", isEnabled = true, label = "Подъём"),
-            Alarm(id = 2, time = "08:30", isEnabled = false, label = "Работа")
-        )
+    var alarms = mutableStateListOf<Alarm>(
+        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
+        Alarm(id = 2, time = "15:01", isEnabled = false, label = "Работа")
     )
-        private set
+//        private set
 
     fun addAlarm(newAlarm: Alarm) {
-        alarms.value = alarms.value + newAlarm
+        alarms.add(newAlarm)
     }
 
-    var currentAlarmIndex = alarms.value.size
+    var currentAlarmIndex = alarms.size
 
     fun loadMusicLibrary(ctx:Context): List<Audio> {
 //        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()

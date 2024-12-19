@@ -1,4 +1,4 @@
-package com.tomsksmarttech.smart_alarm_mobile
+package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -24,11 +24,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -36,12 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.tomsksmarttech.smart_alarm_mobile.sharedData.addAlarm
-import com.tomsksmarttech.smart_alarm_mobile.sharedData.alarms
-import com.tomsksmarttech.smart_alarm_mobile.sharedData.currentAlarmIndex
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -49,27 +48,32 @@ import java.util.Calendar
 @Preview(showSystemUi = true)
 @Composable
 fun AlarmScreen() {
-    var alarms by remember {
-        sharedData.alarms
+    val alarmsList = remember {
+        SharedData.alarms
+    }
+    val appContext = LocalContext.current.applicationContext
+    val alarmManager = remember {
+        AlarmManager(alarms = alarmsList, context = appContext)
     }
     AlarmListScreen(
-        alarms = alarms,
+        alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
-            alarms = alarms.map { if (it.id == updatedAlarm.id) updatedAlarm else it }
-        }
+            val index = SharedData.alarms.indexOfFirst { it.id == updatedAlarm.id }
+            if (index != -1) {
+                SharedData.alarms[index] = updatedAlarm
+            }
+        },
+        alarmManager = alarmManager
     )
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
+    alarmManager: AlarmManager
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(showDialog) {
-        Log.d("SHOWDIALOG", showDialog.toString())
-    }
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
@@ -93,41 +97,42 @@ fun AlarmListScreen(
             items(alarms) { alarm ->
                 AlarmItem(
                     alarm = alarm,
-                    onAlarmChange = onAlarmChange
+                    onAlarmChange = onAlarmChange,
+                    alarmManager = alarmManager
                 )
             }
         }
     }
     if (showDialog) {
-        Log.d("test", sharedData.alarms.toString())
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                Log.d("watttttt", timePickerState.toString())
+                alarmManager.launchAlarm(alarms.last().id)
                 showDialog = false
             },
             onDismiss = {
                 showDialog = false
             }
         )
-        Log.d("SHOWDIALOG2", showDialog.toString())
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(
     alarm: Alarm,
-    onAlarmChange: (Alarm) -> Unit
+    onAlarmChange: (Alarm) -> Unit,
+    alarmManager: AlarmManager
 ) {
     val haptic = LocalHapticFeedback.current
     var checked by remember { mutableStateOf(alarm.isEnabled) }
     var showDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
     ) {
-
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -141,21 +146,24 @@ fun AlarmItem(
                     text = alarm.time,
                     style = MaterialTheme.typography.displayMedium
                 )
-
                 Text(
                     text = alarm.label,
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-
             Spacer(modifier = Modifier.weight(1f))
-
             Switch(
                 checked = checked,
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     checked = it
                     onAlarmChange(alarm.copy(isEnabled = checked))
+
+                    if (checked) {
+                        alarmManager.launchAlarm(alarm.id)
+                    } else {
+                        alarmManager.cancelAlarm(alarm.id)
+                    }
                 }
             )
         }
@@ -164,6 +172,7 @@ fun AlarmItem(
                 alarm = alarm,
                 onConfirm = { timePickerState ->
                     onAlarmChange(alarm.copy(timePickerState.id, timePickerState.time, timePickerState.isEnabled, label = timePickerState.label))
+                    alarmManager.launchAlarm(alarm.id)
                     showDialog = false
                 },
                 onDismiss = { showDialog = false }
@@ -171,7 +180,6 @@ fun AlarmItem(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DialClockDialog(
@@ -214,7 +222,6 @@ fun DialClockDialog(
             initialMinute = localTime.minute,
             is24Hour = true,
         )
-
         TimePickerDialog(
             onDismiss = { onDismiss() },
             onConfirm = {
@@ -255,10 +262,3 @@ fun TimePickerDialog(
     )
 }
 
-data class Alarm(
-    val id: Int,
-    var time: String, // "HH:mm"
-    var isEnabled: Boolean,
-    val repeatDays: List<String>? = null,
-    var label: String,
-)

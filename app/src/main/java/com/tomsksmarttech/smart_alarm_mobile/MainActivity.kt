@@ -7,10 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -28,14 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,9 +42,9 @@ class MainActivity : ComponentActivity() {
 //        val type:Type = object : TypeToken<List<Audio>>() {}.type
 //        viewModel.musicList = gson.fromJson(json, type) as List<Audio>
 
-        if (sharedData.musicList.isEmpty()) {
-            sharedData.musicList = sharedData.loadMusicLibrary(applicationContext)
-            Log.d("Library", sharedData.musicList.toString())
+        if (SharedData.musicList.isEmpty()) {
+            SharedData.musicList = SharedData.loadMusicLibrary(applicationContext)
+            Log.d("Library", SharedData.musicList.toString())
         }
 
         setContent {

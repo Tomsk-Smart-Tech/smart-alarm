@@ -58,7 +58,7 @@ fun MusicScreen() {
 fun MusicTopAppBar() {
     var musicList by remember { mutableStateOf(listOf<Audio?>()) }
     LaunchedEffect(Unit) {
-        musicList = sharedData.musicList
+        musicList = SharedData.musicList
         Log.d("CURRENTMUSIC", musicList.toString())
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
