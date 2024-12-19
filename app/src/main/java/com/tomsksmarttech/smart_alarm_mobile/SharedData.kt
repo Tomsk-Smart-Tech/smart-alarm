@@ -37,14 +37,10 @@ object SharedData {
     )
     var loadMusicJob: Job? = null
     var musicList: List<Audio> = listOf()
-    var alarms = mutableStateOf(
-        listOf<Alarm>(
-            Alarm(id = 1, time = "07:00", isEnabled = true, label = "Подъём"),
-            Alarm(id = 2, time = "08:30", isEnabled = false, label = "Работа")
-        )
+    var alarms = mutableStateListOf(
+        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
+        Alarm(id = 2, time = "15:01", isEnabled = false, label = "Работа")
     )
-        private set
-
     fun addAlarm(newAlarm: Alarm) {
         alarms.add(newAlarm)
     }
