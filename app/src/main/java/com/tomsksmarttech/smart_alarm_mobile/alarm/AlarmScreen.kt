@@ -27,6 +27,7 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -49,21 +50,17 @@ import java.util.Calendar
 @Composable
 fun AlarmScreen() {
     val alarmsList = remember {
-        SharedData.alarms
+        SharedData.alarms.value
     }
     val appContext = LocalContext.current.applicationContext
-    val alarmManager = remember {
-        AlarmManager(alarms = alarmsList, context = appContext)
-    }
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
-            val index = SharedData.alarms.indexOfFirst { it.id == updatedAlarm.id }
+            val index = SharedData.alarms.value.indexOfFirst { it.id == updatedAlarm.id }
             if (index != -1) {
-                SharedData.alarms[index] = updatedAlarm
+                SharedData.alarms.value[index] = updatedAlarm
             }
         },
-        alarmManager = alarmManager
     )
 }
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +68,7 @@ fun AlarmScreen() {
 fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
-    alarmManager: AlarmManager
+//    alarmManager: SingleAlarmManager
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
@@ -95,11 +92,13 @@ fun AlarmListScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             items(alarms) { alarm ->
-                AlarmItem(
-                    alarm = alarm,
-                    onAlarmChange = onAlarmChange,
-                    alarmManager = alarmManager
-                )
+                if (alarm.id != -1) {
+                    AlarmItem(
+                        alarm = alarm,
+                        onAlarmChange = onAlarmChange,
+                        alarmManager = SingleAlarmManager
+                    )
+                }
             }
         }
     }
@@ -107,22 +106,41 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                alarmManager.launchAlarm(alarms.last().id)
-                showDialog = false
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                showDialog = false},
+            onDismiss = { showDialog = false }
+        )
+        Log.d("CHECK SDLG", showDialog.toString())
+//        showDialog = setDialDialog(alarmManager = alarmManager)
+    }
+}
+@Composable
+fun SetDialDialog(
+    showDialog: MutableState<Boolean>
+) {
+    if (showDialog.value) {
+        DialClockDialog(
+            null,
+            onConfirm = { timePickerState ->
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
             },
             onDismiss = {
-                showDialog = false
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
             }
         )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(
     alarm: Alarm,
     onAlarmChange: (Alarm) -> Unit,
-    alarmManager: AlarmManager
+    alarmManager: SingleAlarmManager
 ) {
     val haptic = LocalHapticFeedback.current
     var checked by remember { mutableStateOf(alarm.isEnabled) }
@@ -160,9 +178,9 @@ fun AlarmItem(
                     onAlarmChange(alarm.copy(isEnabled = checked))
 
                     if (checked) {
-                        alarmManager.launchAlarm(alarm.id)
+                        alarmManager.setAlarm(alarm.id -1)
                     } else {
-                        alarmManager.cancelAlarm(alarm.id)
+                        alarmManager.cancelAlarm(alarm.id -1)
                     }
                 }
             )
@@ -172,7 +190,7 @@ fun AlarmItem(
                 alarm = alarm,
                 onConfirm = { timePickerState ->
                     onAlarmChange(alarm.copy(timePickerState.id, timePickerState.time, timePickerState.isEnabled, label = timePickerState.label))
-                    alarmManager.launchAlarm(alarm.id)
+                    alarmManager.setAlarm(alarm.id)
                     showDialog = false
                 },
                 onDismiss = { showDialog = false }

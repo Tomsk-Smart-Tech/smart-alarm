@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tomsksmarttech.smart_alarm_mobile.alarm.SetDialDialog
 
 
 @Composable
@@ -81,9 +82,9 @@ fun MusicTopAppBar() {
     var searchedText by remember {
         mutableStateOf("")
     }
-
-
-
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets(0.dp),
@@ -220,7 +221,7 @@ fun MusicTopAppBar() {
 //                                    Text("Воспроизвести")
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Button(onClick = { TODO("why") }) {
+                                Button(onClick = {showDialog = true}) {
                                     Icon(
                                         imageVector = Icons.Filled.AddCircle,
                                         contentDescription = "Create new alarm"
@@ -233,11 +234,15 @@ fun MusicTopAppBar() {
                             }
                         }
                     }
+
 //                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), modifier = Modifier.fillMaxWidth().height(1.dp))
                 }
             }
         }
 
+    }
+    if (showDialog) {
+        SetDialDialog(showDialog = remember { mutableStateOf(showDialog) })
     }
 }
 

@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.collection.mutableFloatListOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
@@ -17,6 +18,7 @@ import androidx.core.net.toFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -37,15 +39,18 @@ object SharedData {
     )
     var loadMusicJob: Job? = null
     var musicList: List<Audio> = listOf()
-    var alarms = mutableStateListOf(
-        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
-        Alarm(id = 2, time = "15:01", isEnabled = false, label = "Работа")
+    var alarms = MutableStateFlow<MutableList<Alarm>>(
+//        mutableListOf(
+//        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
+//        Alarm(id = 2, time = "15:01", isEnabled = false, label = "Работа")
+//    )
+    mutableListOf(Alarm(-1, "", false, label = ""))
     )
     fun addAlarm(newAlarm: Alarm) {
-        alarms.add(newAlarm)
+        alarms.value.add(newAlarm)
     }
 
-    var currentAlarmIndex = alarms.size
+    var currentAlarmIndex = alarms.value.size
 
     fun loadMusicLibrary(ctx: Context): List<Audio> {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
@@ -72,7 +77,7 @@ object SharedData {
                 val id = cursor.getLong(idColumn)
                 val uri =
                     ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
-                Log.d("ITERATION", "ITERATION")
+//                Log.d("ITERATION", "ITERATION")
                 val name = cursor.getString(nameColumn)
                 val duration = cursor.getInt(durationColumn)
                 musicList = musicList.plus(Audio(name, duration, uri))
@@ -86,7 +91,8 @@ object SharedData {
 
 
 
-    fun <T> saveListAsJson(context: Context, gson: Gson, list: Collection<T>, key: String) {
+    fun <T> saveListAsJson(context: Context, list: Collection<T>, key: String) {
+        val gson = Gson()
         val sharedPreferences =
             context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
         val jsonString = gson.toJson(list)
@@ -95,10 +101,10 @@ object SharedData {
 
     fun <T> loadListFromFile(
         context: Context,
-        gson: Gson,
         key: String,
         clazz: Class<T>
     ): Collection<T>? {
+        val gson = Gson()
         try {
             val sharedPreferences =
                 context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)

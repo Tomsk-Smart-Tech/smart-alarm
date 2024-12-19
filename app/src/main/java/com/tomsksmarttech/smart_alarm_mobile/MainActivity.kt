@@ -1,8 +1,5 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -33,17 +30,15 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.reflect.TypeToken
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.lang.reflect.Type
-
 
 
 class MainActivity : ComponentActivity() {
@@ -51,7 +46,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
+        val tmp = loadListFromFile(this, key = "alarm2", Alarm::class.java)
+        Log.d("ALARM", tmp.toString())
+        if (tmp != null) {
+            tmp.forEach { it: Alarm ->
+                Log.d("ALARM", it.toString())
+                SharedData.addAlarm(it)
+            }
+        }
+        SingleAlarmManager.init(this)
 
         val scope = CoroutineScope(Dispatchers.IO)
         SharedData.loadMusicJob = scope.launch {
@@ -63,6 +66,33 @@ class MainActivity : ComponentActivity() {
                 BottomNavigationBar()
             }
         }
+    }
+    fun saveAlarms() {
+        SharedData.alarms.value.removeAll { it: Alarm ->
+            it.id == -1
+        }
+        Log.d("AAAAA", SharedData.alarms.value.toString())
+        saveListAsJson(context = this, SharedData.alarms.value.toList(), key = "alarm2")
+    }
+    override fun onDestroy() {
+        Log.d("ALARM", "destr" + SharedData.alarms.value.toList().toString())
+        saveAlarms()
+        super.onDestroy()
+    }
+
+    override fun onPause() {
+        Log.d("ALARM", "pause " +SharedData.alarms.value.toList().toString())
+//        SharedData.alarms.value.removeAll(mi)
+        saveAlarms()
+
+        super.onPause()
+    }
+
+
+    override fun onStop() {
+        Log.d("ALARM", "stop " + SharedData.alarms.value.toList().toString())
+        saveAlarms()
+        super.onStop()
     }
 
 }
