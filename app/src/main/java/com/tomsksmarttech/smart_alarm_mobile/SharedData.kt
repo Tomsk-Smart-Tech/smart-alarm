@@ -1,49 +1,28 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
-import android.app.Activity
-import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.collection.mutableFloatListOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
-import androidx.core.net.toFile
+import androidx.core.content.ContextCompat.startActivity
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.home.Setting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.io.File
-import java.util.concurrent.TimeUnit
+
 
 object SharedData {
-    val settingsList = arrayListOf(
-        "Smart alarm",
-        "Подключение к устройству",
-        "Передать музыку на устройство",
-        "Импортировать из календаря",
-        "Справка",
-        "Об устройстве",
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F"
-    )
+
 
     private val _loadMusicJob = MutableStateFlow<Job?>(null)
     val loadMusicJob: StateFlow<Job?> = _loadMusicJob

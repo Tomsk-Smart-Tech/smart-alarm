@@ -1,8 +1,5 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
-import android.app.Activity
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -36,16 +33,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
+import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.lang.reflect.Type
-
 
 
 class MainActivity : ComponentActivity() {
