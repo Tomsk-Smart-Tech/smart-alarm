@@ -10,14 +10,15 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import androidx.core.net.toFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Job
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 object SharedData {
     val settingsList = arrayListOf(
@@ -45,10 +46,10 @@ object SharedData {
         private set
 
     fun addAlarm(newAlarm: Alarm) {
-        alarms.value = alarms.value + newAlarm
+        alarms.add(newAlarm)
     }
 
-    var currentAlarmIndex = alarms.value.size
+    var currentAlarmIndex = alarms.size
 
     fun loadMusicLibrary(ctx: Context): List<Audio> {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
