@@ -1,27 +1,14 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
-import android.app.Activity
-import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
-import android.content.Intent
-import android.media.MediaMetadataRetriever
-import android.net.Uri
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
-import androidx.collection.mutableFloatListOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
-import androidx.core.net.toFile
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import java.io.File
-import java.util.concurrent.TimeUnit
-
 object SharedData {
     val settingsList = arrayListOf(
         "Smart alarm",

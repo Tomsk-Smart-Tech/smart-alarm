@@ -6,6 +6,7 @@ data class Alarm(
     var isEnabled: Boolean,
     val repeatDays: List<String>? = null,
     var label: String,
+    var musicUri: String? = null
 ) {
     fun getHours(): String {
         return time.substring(0,2)

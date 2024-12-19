@@ -35,7 +35,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -52,7 +51,6 @@ fun AlarmScreen() {
     val alarmsList = remember {
         SharedData.alarms.value
     }
-    val appContext = LocalContext.current.applicationContext
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
@@ -68,7 +66,6 @@ fun AlarmScreen() {
 fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
-//    alarmManager: SingleAlarmManager
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
