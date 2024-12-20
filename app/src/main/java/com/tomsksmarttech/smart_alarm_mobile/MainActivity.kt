@@ -8,7 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,6 +22,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -28,7 +32,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -39,7 +45,7 @@ import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 
-
+const val durationMillis = 600
 class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -149,13 +155,17 @@ fun BottomNavigationBar() {
 
     val navController = rememberNavController()
 
+    val currentRoute = navController.currentBackStackEntryFlow
+        .collectAsState(initial = navController.currentBackStackEntry)
+        .value?.destination?.route
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar {
                 BottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
                     NavigationBarItem(
-                        selected = navigationSelectedItem == index,
+                        selected = currentRoute == item.route,
                         label = {
                             Text(item.label)
                         },
@@ -165,13 +175,15 @@ fun BottomNavigationBar() {
                             )
                         },
                         onClick = {
-                            navigationSelectedItem = index
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+//                            navigationSelectedItem = index
+                            if (currentRoute != item.route) {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
                             }
                         }
                     )
@@ -179,113 +191,152 @@ fun BottomNavigationBar() {
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Screens.Home.route,
-            modifier = Modifier.padding(paddingValues = paddingValues)
+        NavigationHost(navController, paddingValues)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+fun NavigationHost(navController : NavHostController, paddingValues : PaddingValues) {
+    NavHost(
+        navController = navController,
+        startDestination = Screens.Home.route,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+        composable(
+            Screens.Home.route,
+            enterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            exitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(durationMillis = durationMillis)
+                )
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(durationMillis = durationMillis)
+                )
+            }
         ) {
-            composable(
-                Screens.Home.route,
-                enterTransition = {
-                    when (initialState.destination.route) {
-                        (Screens.Alarm.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
+            HomeScreen()
+        }
 
-                        (Screens.Music.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
-                },
-                exitTransition = {
-                    when (targetState.destination.route) {
-                        (Screens.Alarm.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        (Screens.Music.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
+        composable(
+            Screens.Alarm.route,
+            enterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    Screens.Music.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
                 }
-            ) {
-                HomeScreen()
-            }
-            composable(Screens.Alarm.route,
-                enterTransition = {
-                    when (initialState.destination.route) {
-                        (Screens.Home.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        (Screens.Music.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
-                },
-                exitTransition = {
-                    when (targetState.destination.route) {
-                        (Screens.Home.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
-
-                        (Screens.Music.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
-                }) {
-                AlarmScreen()
-            }
-            composable(Screens.Music.route,
-                enterTransition = {
-                    when (initialState.destination.route) {
-                        (Screens.Home.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        (Screens.Alarm.route) -> slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
-                },
-                exitTransition = {
-                    when (targetState.destination.route) {
-                        (Screens.Home.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
-
-                        (Screens.Alarm.route) -> slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(700)
-                        )
-
-                        else -> null
-                    }
+            },
+            exitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    Screens.Music.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
                 }
-            ) {
-                MusicScreen()
+            },
+            popEnterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    Screens.Music.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            popExitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    Screens.Music.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
             }
+        ) {
+            AlarmScreen()
+        }
+
+        composable(
+            Screens.Music.route,
+            enterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            exitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            popEnterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            },
+            popExitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+            }
+        ) {
+            MusicScreen()
         }
     }
 }
