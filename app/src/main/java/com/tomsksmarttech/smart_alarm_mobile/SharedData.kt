@@ -33,10 +33,6 @@ object SharedData {
 
     var lastAudio: Audio? = null
     var alarms = MutableStateFlow<MutableList<Alarm>>(
-//        mutableListOf(
-//        Alarm(id = 1, time = "07:00", isEnabled = false, label = "Подъём"),
-//        Alarm(id = 2, time = "15:01", isEnabled = false, label = "Работа")
-//    )
     mutableListOf(Alarm(-1, "", false, label = ""))
     )
     fun addAlarm(newAlarm: Alarm) {

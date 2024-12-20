@@ -86,11 +86,6 @@ fun SettingCard(setting: String, onClick: (context : Context) -> (Unit)) {
         }
     }
 }
-
-
-
-
-
 @Preview
 @Composable
 fun HomeScreenPreview() {

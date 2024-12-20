@@ -20,12 +20,8 @@ data class Alarm(
         }
     }
     fun getMinutes(): String {
-        try {
-            val mins = time.substring(3)
-            return String.format("%02d", mins)
-        } catch (e: Exception) {
-            Log.e("ERROR", "er ${time} : ${alarms.value}")
-            return time.substring(3)
-        }
+        val mins = time.substring(3)
+        Log.d("ALARM", "mins $mins")
+        return mins
     }
 }
