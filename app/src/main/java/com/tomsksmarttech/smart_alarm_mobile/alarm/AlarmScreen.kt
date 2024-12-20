@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,10 +34,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
@@ -51,33 +54,50 @@ import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import kotlin.toString
 
 @Preview(showSystemUi = true)
 @Composable
 fun AlarmScreen() {
-    val alarmsList = remember {
-        SharedData.alarms.value
-    }
+    val alarmsList by SharedData.alarms.collectAsState()
+
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
             val index = SharedData.alarms.value.indexOfFirst { it.id == updatedAlarm.id }
             if (index != -1) {
-                SharedData.alarms.value[index] = updatedAlarm
+                val updatedList = SharedData.alarms.value.toMutableList()
+                updatedList[index] = updatedAlarm
+                SharedData.alarms.value = updatedList
             }
         },
+        onAlarmAdd = { newAlarm ->
+            val updatedList = SharedData.alarms.value.toMutableList()
+            updatedList.add(newAlarm)
+            SharedData.alarms.value = updatedList
+        },
+        onAlarmRemove = { alarmId ->
+            val updatedList = SharedData.alarms.value.toMutableList()
+            updatedList.removeIf { it.id == alarmId }
+            SharedData.alarms.value = updatedList
+        }
     )
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
+    onAlarmAdd: (Alarm) -> Unit,
+    onAlarmRemove: (Int) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
@@ -86,7 +106,14 @@ fun AlarmListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+//                    val newAlarm = Alarm(
+//                        id = generateNewAlarmId(),
+//                        time = "08:00",
+//                        isEnabled = false,
+//                        label = "Новый будильник"
+//                    )
                     showDialog = true
+                    Log.d("ALARM", "alarm added")
                 },
                 modifier = Modifier.padding(8.dp)
             ) {
@@ -103,6 +130,7 @@ fun AlarmListScreen(
                     AlarmItem(
                         alarm = alarm,
                         onAlarmChange = onAlarmChange,
+                        onAlarmRemove = onAlarmRemove,
                         alarmManager = SingleAlarmManager
                     )
                 }
@@ -113,40 +141,23 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
+                onAlarmAdd(SharedData.alarms.value.last())
+                Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
+                Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
                 showDialog = false},
             onDismiss = { showDialog = false }
         )
         Log.d("CHECK SDLG", showDialog.toString())
-//        showDialog = setDialDialog(alarmManager = alarmManager)
     }
 }
-@Composable
-fun SetDialDialog(
-    showDialog: MutableState<Boolean>
-) {
-    if (showDialog.value) {
-        DialClockDialog(
-            null,
-            onConfirm = { timePickerState ->
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-                showDialog.value = false
-                Log.d("SWITCH CHANGED", showDialog.value.toString())
-            },
-            onDismiss = {
-                showDialog.value = false
-                Log.d("SWITCH CHANGED", showDialog.value.toString())
-            }
-        )
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(
     alarm: Alarm,
     onAlarmChange: (Alarm) -> Unit,
+    onAlarmRemove: (Int) -> Unit,
     alarmManager: SingleAlarmManager
 ) {
     val haptic = LocalHapticFeedback.current
@@ -199,11 +210,6 @@ fun AlarmItem(
         }
         AnimatedVisibility(visible = isExpanded) {
             Column{
-//                Text(
-//                    text = "Content Sample for Display on Expansion of Card",
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    modifier = Modifier.padding(8.dp)
-//                )
                 Row(modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp),
@@ -220,7 +226,34 @@ fun AlarmItem(
                     Text("Вибрация", fontWeight = FontWeight.Bold)
                     Switch(
                         modifier = Modifier.scale(0.75f, 0.75f),
-                        checked = isHapticEnabled, onCheckedChange = { isHapticEnabled = !isHapticEnabled })
+                        checked = isHapticEnabled, onCheckedChange = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            isHapticEnabled = !isHapticEnabled
+                        }
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable( onClick = {
+                            onAlarmRemove(alarm.id)
+                            SharedData.removeAlarm(alarm.id)
+                            alarmManager.cancelAlarm(alarm.id)
+                            Log.d("ALARM", "removed alarm")
+                        })
+                        .padding(6.dp),
+                ) {
+                    Row(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text("Удалить будильник", fontWeight = FontWeight.Bold)
+                        Icon(
+                            ImageVector.vectorResource(R.drawable.baseline_17mp_24),
+                            contentDescription = "Show additional settings"
+                        )
+                    }
                 }
             }
         }
@@ -237,9 +270,31 @@ fun AlarmItem(
         }
     }
 }
+
+
+@Composable
+fun SetDialDialog(
+    showDialog: MutableState<Boolean>
+) {
+    if (showDialog.value) {
+        DialClockDialog(
+            null,
+            onConfirm = { timePickerState ->
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
+            },
+            onDismiss = {
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
+            }
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DialClockDialog(
+fun DialClockDialog (
     alarm: Alarm?,
     onConfirm: (Alarm) -> Unit,
     onDismiss: () -> Unit,
@@ -262,9 +317,11 @@ fun DialClockDialog(
                     isEnabled = true,
                     label = "Новый будильник"
                 )
-                addAlarm(newAlarm)
-                onConfirm(newAlarm)
                 Log.d("ALARM", "$newAlarm : ")
+//                AlarmHandler.updateAlarm(newAlarm)
+                SharedData.addAlarm(newAlarm)
+                onConfirm(newAlarm)
+                updateCurrAlarmIndex()
             }
         ) {
             TimePicker(
@@ -294,10 +351,7 @@ fun DialClockDialog(
         }
     }
 }
-fun generateNewAlarmId(): Int {
-    return currentAlarmIndex++
-    Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
-}
+
 @Composable
 fun TimePickerDialog(
     onDismiss: () -> Unit,
@@ -319,4 +373,15 @@ fun TimePickerDialog(
         text = { content() }
     )
 }
-
+fun generateNewAlarmId(): Int {
+    Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
+    return currentAlarmIndex + 2
+}
+//object AlarmHandler{
+//    var alarm: Alarm = SharedData.alarms.value.first()
+//    fun updateAlarm(a: Alarm) {
+//
+//        alarm = a
+//
+//    }
+//}
