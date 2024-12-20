@@ -3,6 +3,7 @@ package com.tomsksmarttech.smart_alarm_mobile.home
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.compose.rememberNavController
+import com.tomsksmarttech.smart_alarm_mobile.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
@@ -38,12 +40,18 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
-    val settingsList = arrayListOf<Setting>(
+    var events : String
+    val settingsList = arrayListOf(
         Setting("Smart alarm") {},
         Setting("Подключение к устройству", SettingsFunctions()::connectToDevice),
         Setting("Справка"){
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
             startActivity(context, browserIntent, null)
+        },
+        Setting("Импортировать календарь") {
+            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
+            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+            Log.d("EVENTS", events)
         },
         Setting("Об устройстве", SettingsFunctions()::about),
     )

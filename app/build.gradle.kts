@@ -17,6 +17,11 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    packaging {
+        resources {
+            excludes.addAll(listOf("META-INF/INDEX.LIST", "META-INF/io.netty.versions.properties"))
+        }
+    }
 
     buildTypes {
         release {
@@ -53,6 +58,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.androidx.room.ktx)
     implementation(libs.gson)
+    implementation(libs.hivemq.mqtt.client)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

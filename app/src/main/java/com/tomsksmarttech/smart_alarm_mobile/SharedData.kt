@@ -2,17 +2,13 @@ package com.tomsksmarttech.smart_alarm_mobile
 
 import android.content.ContentUris
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startActivity
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
-import com.tomsksmarttech.smart_alarm_mobile.home.Setting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

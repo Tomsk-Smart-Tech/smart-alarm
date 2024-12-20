@@ -152,7 +152,6 @@ fun AlarmListScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(
     alarm: Alarm,
