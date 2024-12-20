@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -256,8 +257,8 @@ fun MusicLibrary(
                         Text(
                             audio.name,
                             textAlign = TextAlign.Left,
-                            modifier = Modifier.width(300.dp).basicMarquee(),
-                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(min = 100.dp, max = 500.dp).basicMarquee(),
+//                            overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                             fontWeight = FontWeight.Bold,
                             fontSize = MaterialTheme.typography.bodyLarge.fontSize

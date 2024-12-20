@@ -1,7 +1,9 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
+import SingleAlarmManager
 import android.R.attr.onClick
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -190,7 +192,7 @@ fun AlarmItem(
                 }
             )
         }
-        if (expanded) {
+        AnimatedVisibility(visible = expanded) {
             Text(
                 text = "Content Sample for Display on Expansion of Card",
                 style = MaterialTheme.typography.bodyMedium,
