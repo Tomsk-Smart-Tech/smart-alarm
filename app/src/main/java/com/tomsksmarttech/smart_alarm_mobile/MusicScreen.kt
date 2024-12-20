@@ -257,7 +257,7 @@ fun MusicLibrary(
                         Text(
                             audio.name,
                             textAlign = TextAlign.Left,
-                            modifier = Modifier.widthIn(min = 100.dp, max = 500.dp).basicMarquee(),
+                            modifier = Modifier.widthIn(min = 100.dp, max = 200.dp).basicMarquee(),
 //                            overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                             fontWeight = FontWeight.Bold,
