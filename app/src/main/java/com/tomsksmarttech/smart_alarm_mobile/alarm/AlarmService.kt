@@ -10,8 +10,6 @@ import android.net.Uri
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.core.app.NotificationCompat
 
 class AlarmService : Service() {
 
@@ -23,27 +21,57 @@ class AlarmService : Service() {
         createNotificationChannel(this)
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Будильник"
-        val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
-            .setContentTitle(alarmLabel)
-            .setContentText("Будильник сработал")
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setAutoCancel(true)
-            .build()
+//    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+//        val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Будильник"
+//        val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
+//            .setContentTitle(alarmLabel)
+//            .setContentText("Будильник сработал")
+//            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+//            .setPriority(NotificationCompat.PRIORITY_HIGH)
+//            .setCategory(NotificationCompat.CATEGORY_ALARM)
+//            .setAutoCancel(true)
+//            .build()
+//
+//        startForeground(1, notification)
+//
+//        val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
+//        if (!ringtoneUri.isNullOrEmpty()) {
+//            playRingtone(ringtoneUri)
+//        }
+//
+//        wakeScreen()
+//        return START_STICKY
+//    }
 
-        startForeground(1, notification)
-
-        val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
-        if (!ringtoneUri.isNullOrEmpty()) {
-            playRingtone(ringtoneUri)
+    private fun showAlarmActivity() {
+        val intent = Intent(this, AlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
+        startActivity(intent)
+    }
 
-        wakeScreen()
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        when (intent.action) {
+            "STOP_ALARM" -> stopAlarm()
+            else -> {
+                showAlarmActivity()
+                val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
+                if (!ringtoneUri.isNullOrEmpty()) {
+                    playRingtone(ringtoneUri)
+                }
+                wakeScreen()
+            }
+        }
         return START_STICKY
     }
+
+    private fun stopAlarm() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+        stopSelf()
+    }
+
     private fun createNotificationChannel(context: Context) {
         val channelId = "ALARM_CHANNEL"
         val channel = NotificationChannel(

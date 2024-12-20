@@ -5,7 +5,6 @@ import android.content.Intent
 import android.util.Log
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import java.util.Calendar
 
