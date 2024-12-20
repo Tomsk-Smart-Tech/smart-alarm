@@ -56,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -66,15 +65,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
-import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+
 import com.tomsksmarttech.smart_alarm_mobile.alarm.DialClockDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import com.tomsksmarttech.smart_alarm_mobile.alarm.SetDialDialog
-import com.tomsksmarttech.smart_alarm_mobile.alarm.generateNewAlarmId
-import kotlinx.coroutines.flow.update
-import java.util.Calendar
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -333,13 +325,12 @@ fun MusicLibrary(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
+                Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
+                Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-                showDialog = false
-                Log.d("SWITCH CHANGED mjusic", showDialog.toString())
-            },
+                showDialog = false},
             onDismiss = {
                 showDialog = false
-                Log.d("SWITCH CHANGED music", showDialog.toString())
             }
         )
         val alarmsState by alarms.collectAsState()

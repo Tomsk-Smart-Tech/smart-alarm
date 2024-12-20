@@ -141,10 +141,10 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                onAlarmAdd(AlarmHandler.alarm)
-                Log.d("ALARM", "Creating new with id ${AlarmHandler.alarm}")
+                onAlarmAdd(SharedData.alarms.value.last())
+                Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
-                SingleAlarmManager.setAlarm(AlarmHandler.alarm.id)
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
                 showDialog = false},
             onDismiss = { showDialog = false }
         )
@@ -237,7 +237,7 @@ fun AlarmItem(
                         .fillMaxWidth()
                         .clickable( onClick = {
                             onAlarmRemove(alarm.id)
-                            AlarmConfigurer.removeAlarm(alarm.id)
+                            SharedData.removeAlarm(alarm.id)
                             alarmManager.cancelAlarm(alarm.id)
                             Log.d("ALARM", "removed alarm")
                         })
@@ -318,7 +318,8 @@ fun DialClockDialog (
                     label = "Новый будильник"
                 )
                 Log.d("ALARM", "$newAlarm : ")
-                AlarmHandler.alarm = newAlarm
+//                AlarmHandler.updateAlarm(newAlarm)
+                SharedData.addAlarm(newAlarm)
                 onConfirm(newAlarm)
                 updateCurrAlarmIndex()
             }
@@ -376,6 +377,11 @@ fun generateNewAlarmId(): Int {
     Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
     return currentAlarmIndex + 2
 }
-object AlarmHandler{
-    var alarm: Alarm = SharedData.alarms.value.first()
-}
+//object AlarmHandler{
+//    var alarm: Alarm = SharedData.alarms.value.first()
+//    fun updateAlarm(a: Alarm) {
+//
+//        alarm = a
+//
+//    }
+//}

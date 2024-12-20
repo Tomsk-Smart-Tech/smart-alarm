@@ -32,13 +32,22 @@ object SharedData {
     val musicList: StateFlow<List<Audio>> = _musicList
 
     var lastAudio: Audio? = null
-    var alarms = MutableStateFlow<MutableList<Alarm>>(
-    mutableListOf(Alarm(-1, "", false, label = ""))
+    val alarms = MutableStateFlow(
+        mutableListOf(
+            Alarm(-1, "", false, label = "")
+        )
     )
-    fun addAlarm(newAlarm: Alarm) {
-        alarms.value.add(newAlarm)
-        if (newAlarm.id > currentAlarmIndex) currentAlarmIndex = newAlarm.id
 
+    fun addAlarm(newAlarm: Alarm) {
+        val updatedList = alarms.value.toMutableList()
+        updatedList.add(newAlarm)
+        alarms.value = updatedList
+    }
+
+    fun removeAlarm(id: Int) {
+        val updatedList = alarms.value.toMutableList()
+        updatedList.removeIf { it.id == id }
+        alarms.value = updatedList
     }
 
     var alreadyAddedAlarms = mutableListOf<Alarm>()
