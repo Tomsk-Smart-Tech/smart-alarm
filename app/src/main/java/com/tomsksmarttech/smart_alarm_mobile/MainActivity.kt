@@ -57,11 +57,16 @@ class MainActivity : ComponentActivity() {
         if (SharedData.checkPermission(this, audioPermission)) {
             SharedData.startLoadMusicJob(applicationContext)
         }
-        val tmp = loadListFromFile(this, key = "alarm2", Alarm::class.java)
-        Log.d("ALARM", tmp.toString())
+        val tmp = loadListFromFile(this, key = "alarm0", Alarm::class.java)
+        Log.d("ALARM", "бляя" + tmp.toString())
         tmp?.forEach { it: Alarm ->
             Log.d("ALARM", it.toString())
-            SharedData.addAlarm(it)
+            if (!SharedData.alarms.value.contains(it)) {
+                SharedData.addAlarm(it)
+            } else {
+                Log.d("ALARM", "already have" + SharedData.alarms.value)
+                SharedData.alreadyAddedAlarms.add(it)
+            }
         }
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
@@ -73,11 +78,15 @@ class MainActivity : ComponentActivity() {
         }
     }
     fun saveAlarms() {
+        Log.d("ALARM", "before filter" + SharedData.alarms.value.toList().toString())
+
         SharedData.alarms.value.removeAll { it: Alarm ->
-            it.id == -1
+            it.id == -1 || SharedData.alreadyAddedAlarms.contains(it)
         }
-        Log.d("AAAAA", SharedData.alarms.value.toString())
-        saveListAsJson(context = this, SharedData.alarms.value.toList(), key = "alarm2")
+        if (!SharedData.alarms.value.isEmpty()) {
+            Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
+            saveListAsJson(context = this, SharedData.alarms.value.toList(), key = "alarm0")
+        }
     }
     override fun onDestroy() {
         Log.d("ALARM", "destr" + SharedData.alarms.value.toList().toString())

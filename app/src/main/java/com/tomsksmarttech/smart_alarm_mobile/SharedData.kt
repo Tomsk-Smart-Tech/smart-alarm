@@ -41,11 +41,17 @@ object SharedData {
     )
     fun addAlarm(newAlarm: Alarm) {
         alarms.value.add(newAlarm)
+        if (newAlarm.id > currentAlarmIndex) currentAlarmIndex = newAlarm.id
+
     }
+
+    var alreadyAddedAlarms = mutableListOf<Alarm>()
 
     var currentAlarmIndex = alarms.value.size
     fun updateCurrAlarmIndex() {
-        currentAlarmIndex = alarms.value.size
+        alarms.value.forEach{ it: Alarm ->
+            if (it.id > currentAlarmIndex) currentAlarmIndex = it.id
+        }
     }
 
     fun startLoadMusicJob(context: Context) {
@@ -130,6 +136,7 @@ object SharedData {
                 context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
             val jsonString = sharedPreferences.getString(key, null) ?: return null
             val type = TypeToken.getParameterized(List::class.java, clazz).type
+            Log.d("ALARM", jsonString)
             return gson.fromJson(jsonString, type)
         } catch (e: Exception) {
             Log.e("Exception: ", e.toString())

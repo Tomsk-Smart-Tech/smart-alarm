@@ -17,5 +17,6 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("alarm_id", alarm)
         }
         ContextCompat.startForegroundService(context, serviceIntent)
+
     }
 }

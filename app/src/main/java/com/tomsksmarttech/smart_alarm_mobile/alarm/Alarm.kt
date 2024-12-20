@@ -13,7 +13,7 @@ data class Alarm(
 ) {
     fun getHours(): String {
         try {
-        return time.substring(0,2)
+        return time.substring(0, endIndex = 2)
         } catch (e: Exception) {
             Log.e("ERROR", "er ${time} : ${alarms.value}")
             return ""
@@ -21,10 +21,11 @@ data class Alarm(
     }
     fun getMinutes(): String {
         try {
-            return time.substring(3, 4)
+            val mins = time.substring(3)
+            return String.format("%02d", mins)
         } catch (e: Exception) {
             Log.e("ERROR", "er ${time} : ${alarms.value}")
-            return ""
+            return time.substring(3)
         }
     }
 }

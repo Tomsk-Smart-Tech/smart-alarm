@@ -1,10 +1,10 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import SingleAlarmManager
-import android.R.attr.onClick
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardElevation
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -40,10 +39,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
@@ -146,9 +150,10 @@ fun AlarmItem(
     alarmManager: SingleAlarmManager
 ) {
     val haptic = LocalHapticFeedback.current
-    var checked by remember { mutableStateOf(alarm.isEnabled) }
-    var showDialog by remember { mutableStateOf(false) }
-    var expanded by remember { mutableStateOf (false) }
+    var isEnabled by remember { mutableStateOf(alarm.isEnabled) }
+    var isShowDialog by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf (false) }
+    var isHapticEnabled by remember { mutableStateOf (false) }
 
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -156,7 +161,7 @@ fun AlarmItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
-            .clickable( onClick = { expanded = !expanded })
+            .clickable( onClick = { isExpanded = !isExpanded })
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -167,7 +172,7 @@ fun AlarmItem(
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
-                    modifier = Modifier.clickable { showDialog = true },
+                    modifier = Modifier.clickable { isShowDialog = true },
                     text = alarm.time,
                     style = MaterialTheme.typography.displayMedium
                 )
@@ -178,13 +183,13 @@ fun AlarmItem(
             }
             Spacer(modifier = Modifier.weight(1f))
             Switch(
-                checked = checked,
+                checked = isEnabled,
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    checked = it
-                    onAlarmChange(alarm.copy(isEnabled = checked))
+                    isEnabled = it
+                    onAlarmChange(alarm.copy(isEnabled = isEnabled))
 
-                    if (checked) {
+                    if (isEnabled) {
                         alarmManager.setAlarm(alarm.id)
                     } else {
                         alarmManager.cancelAlarm(alarm.id)
@@ -192,22 +197,42 @@ fun AlarmItem(
                 }
             )
         }
-        AnimatedVisibility(visible = expanded) {
-            Text(
-                text = "Content Sample for Display on Expansion of Card",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(8.dp)
-            )
+        AnimatedVisibility(visible = isExpanded) {
+            Column{
+//                Text(
+//                    text = "Content Sample for Display on Expansion of Card",
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    modifier = Modifier.padding(8.dp)
+//                )
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Мелодия будильника", fontWeight = FontWeight.Bold)
+                    Icon(ImageVector.vectorResource(R.drawable.ic_arrow_right), contentDescription = "Show additional settings")
+                }
+                Row(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text("Вибрация", fontWeight = FontWeight.Bold)
+                    Switch(
+                        modifier = Modifier.scale(0.75f, 0.75f),
+                        checked = isHapticEnabled, onCheckedChange = { isHapticEnabled = !isHapticEnabled })
+                }
+            }
         }
-        if (showDialog) {
+        if (isShowDialog) {
             DialClockDialog(
                 alarm = alarm,
                 onConfirm = { timePickerState ->
                     onAlarmChange(alarm.copy(timePickerState.id, timePickerState.time, timePickerState.isEnabled, label = timePickerState.label))
                     alarmManager.setAlarm(alarm.id)
-                    showDialog = false
+                    isShowDialog = false
                 },
-                onDismiss = { showDialog = false }
+                onDismiss = { isShowDialog = false }
             )
         }
     }
@@ -231,7 +256,6 @@ fun DialClockDialog(
             onDismiss = { onDismiss() },
             onConfirm = {
                 val time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
-                Log.d("test", time)
                 val newAlarm = Alarm(
                     id = generateNewAlarmId(),
                     time = time,
@@ -240,6 +264,7 @@ fun DialClockDialog(
                 )
                 addAlarm(newAlarm)
                 onConfirm(newAlarm)
+                Log.d("ALARM", "$newAlarm : ")
             }
         ) {
             TimePicker(
@@ -271,6 +296,7 @@ fun DialClockDialog(
 }
 fun generateNewAlarmId(): Int {
     return currentAlarmIndex++
+    Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
 }
 @Composable
 fun TimePickerDialog(

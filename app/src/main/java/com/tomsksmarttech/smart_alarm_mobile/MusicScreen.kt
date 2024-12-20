@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.DialClockDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -329,7 +330,18 @@ fun MusicLibrary(
         }
     }
     if (showDialog) {
-        SetDialDialog(showDialog = remember { mutableStateOf(showDialog) })
+        DialClockDialog(
+            null,
+            onConfirm = { timePickerState ->
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                showDialog = false
+                Log.d("SWITCH CHANGED mjusic", showDialog.toString())
+            },
+            onDismiss = {
+                showDialog = false
+                Log.d("SWITCH CHANGED music", showDialog.toString())
+            }
+        )
         val alarmsState by alarms.collectAsState()
         val lastAlarm = alarmsState.lastOrNull()
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
