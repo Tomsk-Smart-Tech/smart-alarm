@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import androidx.core.app.NotificationCompat
 
 class AlarmService : Service() {
 
@@ -59,9 +60,19 @@ class AlarmService : Service() {
                 if (!ringtoneUri.isNullOrEmpty()) {
                     playRingtone(ringtoneUri)
                 }
+                val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
+                .setContentTitle("alarmLabel")
+                .setContentText("Будильник сработал")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setAutoCancel(true)
+                .build()
+                startForeground(1, notification)
                 wakeScreen()
             }
         }
+
         return START_STICKY
     }
 

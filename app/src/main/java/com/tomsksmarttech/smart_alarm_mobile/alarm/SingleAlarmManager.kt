@@ -7,6 +7,9 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import java.util.Calendar
+import android.media.RingtoneManager
+import android.net.Uri
+
 
 object SingleAlarmManager {
     private var systemAlarmManager: SystemAlarmManager? = null
@@ -27,13 +30,24 @@ object SingleAlarmManager {
             timeInMillis = System.currentTimeMillis()
             set(Calendar.HOUR_OF_DAY, alarms.value[id].getHours().toInt())
             set(Calendar.MINUTE, alarms.value[id].getMinutes().toInt())
-
+//            set(Calendar.SECOND, 0)
+//            set(Calendar.MILLISECOND, 0)
         }
-        Log.d("TEST", "Launching Alarm: {$id}")
+
+        if (calendar.timeInMillis <= System.currentTimeMillis()) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        Log.d("TEST", "Alarm set for: ${calendar.time}")
+        Log.d("TEST", "Alarm time: ${alarms.value[id].getHours()}, ${alarms.value[id].getMinutes()}")
+
         alarms.value[id].musicUri = SharedData.lastAudio?.uri.toString()
         val intent = Intent(appContext, AlarmReceiver::class.java).apply {
             action = "com.tomsksmarttech.ALARM_ACTION"
             putExtra("alarm_id", id.toString())
+            if (alarms.value[id].musicUri.toString() == "null") {
+                alarms.value[id].musicUri = getDefaultAlarmRingtoneUri().toString()
+            }
             Log.d("TEST", "SENDING " + alarms.value[id].musicUri.toString())
             putExtra("RINGTONE_URI", alarms.value[id].musicUri)
         }
@@ -67,6 +81,19 @@ object SingleAlarmManager {
 
         systemAlarmManager?.cancel(pendingIntent)
     }
+
+
+
+    fun getDefaultAlarmRingtoneUri(): Uri {
+        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        return if (uri != null) {
+            uri
+        } else {
+            // Если рингтон будильника по умолчанию не задан, используем рингтон уведомления
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        }
+    }
+
 }
 
 //object SingleAlarmManager {
