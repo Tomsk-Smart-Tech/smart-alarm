@@ -2,4 +2,9 @@
 <resources>
 
     <style name="Theme.Smartalarmmobile" parent="android:Theme.Material.Light.NoActionBar" />
-</resources>
+    <style name="Theme.AppCompat.Dialog" parent="android:Theme.Holo.Light.Dialog.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowCloseOnTouchOutside">false</item>
+        <item name="android:windowFullscreen">true</item>
+    </style></resources>

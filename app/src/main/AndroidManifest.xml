@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+
 
     <application
         android:allowBackup="true"
@@ -33,10 +36,12 @@
         </activity>
         <activity
             android:name=".alarm.AlarmActivity"
+            android:theme="@style/Theme.AppCompat.Dialog"
             android:launchMode="singleTask"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:excludeFromRecents="true">
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
         </activity>
         <receiver android:name=".alarm.AlarmReceiver"
             android:enabled="true"

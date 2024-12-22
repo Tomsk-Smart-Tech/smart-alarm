@@ -23,31 +23,9 @@ class AlarmService : Service() {
         createNotificationChannel(this)
     }
 
-//    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-//        val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Будильник"
-//        val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
-//            .setContentTitle(alarmLabel)
-//            .setContentText("Будильник сработал")
-//            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-//            .setPriority(NotificationCompat.PRIORITY_HIGH)
-//            .setCategory(NotificationCompat.CATEGORY_ALARM)
-//            .setAutoCancel(true)
-//            .build()
-//
-//        startForeground(1, notification)
-//
-//        val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
-//        if (!ringtoneUri.isNullOrEmpty()) {
-//            playRingtone(ringtoneUri)
-//        }
-//
-//        wakeScreen()
-//        return START_STICKY
-//    }
-
     private fun showAlarmActivity() {
         val intent = Intent(this, AlarmActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         startActivity(intent)
     }
@@ -123,6 +101,8 @@ class AlarmService : Service() {
     }
 
     private fun wakeScreen() {
+
+
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.FULL_WAKE_LOCK or
