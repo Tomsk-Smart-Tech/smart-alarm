@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardElevation
@@ -58,7 +59,6 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import kotlin.toString
 
 @Preview(showSystemUi = true)
 @Composable
@@ -78,7 +78,7 @@ fun AlarmScreen() {
         onAlarmAdd = { newAlarm ->
             val updatedList = SharedData.alarms.value.toMutableList()
             updatedList.add(newAlarm)
-            SharedData.alarms.value = updatedList
+//            SharedData.alarms.value = updatedList
         },
         onAlarmRemove = { alarmId ->
             val updatedList = SharedData.alarms.value.toMutableList()
@@ -198,7 +198,6 @@ fun AlarmItem(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     isEnabled = it
                     onAlarmChange(alarm.copy(isEnabled = isEnabled))
-
                     if (isEnabled) {
                         alarmManager.setAlarm(alarm.id)
                     } else {
