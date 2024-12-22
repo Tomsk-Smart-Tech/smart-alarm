@@ -24,11 +24,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
-import kotlin.or
 
 class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             AlarmNotif(
                 { stopAlarmService(this) }
@@ -36,6 +36,12 @@ class AlarmActivity : ComponentActivity() {
 
         }
     }
+
+    override fun onBackPressed() {
+        stopAlarmService(this)
+        super.onBackPressed()
+    }
+
     fun stopAlarmService(context: Context) {
         val stopIntent = Intent(context, AlarmService::class.java).apply {
             action = "STOP_ALARM"
