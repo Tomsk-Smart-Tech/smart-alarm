@@ -39,6 +39,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
@@ -54,7 +55,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
-        if (SharedData.checkPermission(this, audioPermission)) {
+        if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
             SharedData.startLoadMusicJob(applicationContext)
         }
         val tmp = loadListFromFile(this, key = "alarm0", Alarm::class.java)

@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -93,7 +95,7 @@ fun MusicTopAppBar() {
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
+        if (isGranted && musicList.isEmpty()) {
             SharedData.startLoadMusicJob(context)
             isPermissionGranted = true
         }
@@ -227,14 +229,17 @@ fun MusicLibrary(
                     it.name.lowercase().contains(searchedText.lowercase())
                 }
             } else {
-                musicList
+                musicList.sortedBy {
+                    it.name
+                }
             }, key = { audio ->
                 audio.uri
             }) { audio ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(10.dp),
+                elevation  = CardDefaults.cardElevation(defaultElevation = 15.dp)
             ) {
                 Column(
                     modifier = Modifier

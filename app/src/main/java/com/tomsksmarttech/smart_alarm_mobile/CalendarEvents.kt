@@ -106,4 +106,8 @@ class CalendarEvents {
         return gson.toJson(events)
     }
 
+    fun sendCalendarEventsToDevice(context: Context, events: List<CalendarEvent>) {
+
+    }
+
 }
