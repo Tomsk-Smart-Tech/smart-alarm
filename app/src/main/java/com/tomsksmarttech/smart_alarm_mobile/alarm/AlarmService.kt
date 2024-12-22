@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.IBinder
@@ -105,8 +106,14 @@ class AlarmService : Service() {
         try {
             val uri = Uri.parse(uriString)
             mediaPlayer = MediaPlayer().apply {
+                setAudioAttributes( // Here is the important part
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM) // usage - alarm
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
                 setDataSource(this@AlarmService, uri)
-                isLooping = false
+                isLooping = true
                 prepare()
                 start()
             }

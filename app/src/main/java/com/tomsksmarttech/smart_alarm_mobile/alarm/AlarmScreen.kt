@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardElevation
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,9 +31,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberTimePickerState
@@ -51,6 +57,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
@@ -164,6 +171,7 @@ fun AlarmItem(
     var isShowDialog by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf (false) }
     var isHapticEnabled by remember { mutableStateOf (false) }
+    var isLabelChanged by remember { mutableStateOf (false) }
 
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -187,6 +195,7 @@ fun AlarmItem(
                     style = MaterialTheme.typography.displayMedium
                 )
                 Text(
+                    modifier = Modifier.clickable { isLabelChanged = true},
                     text = alarm.label,
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -248,7 +257,7 @@ fun AlarmItem(
                         verticalAlignment = Alignment.CenterVertically) {
                         Text("Удалить будильник", fontWeight = FontWeight.Bold)
                         Icon(
-                            ImageVector.vectorResource(R.drawable.baseline_17mp_24),
+                            ImageVector.vectorResource(R.drawable.ic_delete),
                             contentDescription = "Show additional settings"
                         )
                     }
@@ -266,29 +275,35 @@ fun AlarmItem(
                 onDismiss = { isShowDialog = false }
             )
         }
+        if (isLabelChanged) {
+            ChangeLabelDialog(alarm, onConfirm = { newAlarm ->
+                alarm.label = newAlarm.label
+                isLabelChanged = false
+            }, onDismiss = {isLabelChanged = false})
+        }
     }
 }
 
 
-@Composable
-fun SetDialDialog(
-    showDialog: MutableState<Boolean>
-) {
-    if (showDialog.value) {
-        DialClockDialog(
-            null,
-            onConfirm = { timePickerState ->
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-                showDialog.value = false
-                Log.d("SWITCH CHANGED", showDialog.value.toString())
-            },
-            onDismiss = {
-                showDialog.value = false
-                Log.d("SWITCH CHANGED", showDialog.value.toString())
-            }
-        )
-    }
-}
+//@Composable
+//fun SetDialDialog(
+//    showDialog: MutableState<Boolean>
+//) {
+//    if (showDialog.value) {
+//        DialClockDialog(
+//            null,
+//            onConfirm = { timePickerState ->
+//                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+//                showDialog.value = false
+//                Log.d("SWITCH CHANGED", showDialog.value.toString())
+//            },
+//            onDismiss = {
+//                showDialog.value = false
+//                Log.d("SWITCH CHANGED", showDialog.value.toString())
+//            }
+//        )
+//    }
+//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -383,3 +398,60 @@ fun generateNewAlarmId(): Int {
 //
 //    }
 //}
+
+
+@Composable
+fun ChangeLabelDialog(
+    alarm: Alarm,
+    onDismiss: () -> Unit,
+    onConfirm: (Alarm) -> Unit,
+) {
+    var newLabel by remember { mutableStateOf(alarm.label) } // Текущее значение текста
+
+    Dialog(onDismissRequest = { onDismiss() }) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.background,
+            tonalElevation = 4.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                // Заголовок диалога
+                Text(
+                    text = "Change Label",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Поле для ввода текста
+                TextField(
+                    value = newLabel,
+                    onValueChange = { newLabel = it },
+                    label = { Text("Label") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Кнопки "Confirm" и "Cancel"
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    TextButton(onClick = { onDismiss() }) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        val updatedAlarm = alarm.copy(label = newLabel) // Обновляем будильник
+                        onConfirm(updatedAlarm) // Передаем обновленный будильник
+                    }) {
+                        Text("Confirm")
+                    }
+                }
+            }
+        }
+    }
+}
