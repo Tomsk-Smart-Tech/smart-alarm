@@ -50,7 +50,7 @@ fun HomeScreen() {
 
     val settingsList = arrayListOf(
         Setting("Smart alarm") {},
-        Setting("Подключение к устройству", SettingsFunctions()::connectToDevice),
+        Setting("Подключение к устройству", {SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")}),
         Setting("Справка"){
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
             startActivity(context, browserIntent, null)
@@ -58,6 +58,11 @@ fun HomeScreen() {
         Setting("Импортировать календарь") {
             events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+            try {
+                isConnected = SettingsFunctions().connectToDevice(context, events)
+            } catch (e: Exception) {
+                Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
+            }
             Log.d("EVENTS", events)
         },
         Setting("Об устройстве", SettingsFunctions()::about),

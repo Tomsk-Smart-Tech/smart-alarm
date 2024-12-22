@@ -5,33 +5,26 @@ import android.widget.Toast
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client
-import com.hivemq.client.mqtt.mqtt3.message.publish.Mqtt3Publish
 
-class MqttService {
-    lateinit var client: Mqtt3BlockingClient
-    lateinit var appContext: Context
-    lateinit var topic: String
-    val address = "192.168.137.102"
-    val port = 1883
-    fun init(context: Context) {
-        if (!::appContext.isInitialized) {
-            appContext = context.applicationContext
-        }
-    }
+class MqttService(private val context: Context) {
+    private lateinit var client: Mqtt3BlockingClient
+    private lateinit var topic: String
+    private val address = "192.168.1.112"
+    private val port = 1883
 
-    fun main(topic: String) {
+    fun main(topic: String, msg: String) {
         this.topic = topic
         client = Mqtt3Client.builder().identifier("ggg")
-        .serverHost(address)
-        .serverPort(port)
+            .serverHost(address)
+            .serverPort(port)
             .buildBlocking()
         connect()
-        var message: String = "Hello, I'm ESP32 ^_^"
-        publish(message)
+//        val message = "Hello, I'm ESP32 ^_^"
+        publish(msg)
         subscribe()
     }
 
-    fun connect () {
+    private fun connect() {
         try {
             val connAckMessage = client.connectWith()
                 .simpleAuth()
@@ -45,33 +38,31 @@ class MqttService {
                 .retain(true)
                 .applyWillPublish()
                 .send()
-            Toast.makeText(appContext, connAckMessage.toString(), Toast.LENGTH_LONG).show()
+            showToast("Connected: $connAckMessage")
         } catch (e: Exception) {
-            Toast.makeText(appContext, "Kotlin Fehler beim Senden", Toast.LENGTH_LONG)
-                .show()
-        } catch (e: java.lang.Exception) {
-            Toast.makeText(appContext, "Java Fehler beim Senden", Toast.LENGTH_LONG).show()
+            showToast("Error connecting: ${e.message}")
         }
     }
 
-    fun publish (msg: String) {
-        client
-            .publishWith()
+    private fun publish(msg: String) {
+        client.publishWith()
             .topic(topic)
             .qos(MqttQos.AT_LEAST_ONCE)
             .payload(msg.toByteArray())
             .send()
-
     }
 
-    fun subscribe() {
-        var lastRes : Mqtt3Publish
+    private fun subscribe() {
         client.toAsync().subscribeWith()
             .topicFilter(topic)
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { actResponse ->
-                lastRes = actResponse
+                showToast("Received: ${actResponse.payload}")
             }
             .send()
+    }
+
+    private fun showToast(message: String) {
+//        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }
