@@ -3,21 +3,19 @@ package com.tomsksmarttech.smart_alarm_mobile
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentResolver
-import android.content.ContentUris
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.Cursor
-import android.icu.util.Calendar
 import android.net.Uri
 import android.provider.CalendarContract
-import android.text.format.DateUtils
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
-import java.util.Date
+
 
 class CalendarEvents {
     @SuppressLint("LongLogTag")
@@ -36,6 +34,7 @@ class CalendarEvents {
 
     fun parseCalendarEvents(context: Context, fromDate: Long? = null, toDate: Long? = null): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
+
 
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context as MainActivity, arrayOf(Manifest.permission.READ_CALENDAR), 1)
@@ -109,5 +108,6 @@ class CalendarEvents {
     fun sendCalendarEventsToDevice(context: Context, events: List<CalendarEvent>) {
 
     }
+
 
 }
