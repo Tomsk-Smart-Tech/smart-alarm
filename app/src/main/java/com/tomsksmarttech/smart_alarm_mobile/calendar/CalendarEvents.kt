@@ -28,14 +28,14 @@ class CalendarEvents {
         val rrule: String? // Recurrence rule
     )
 
-    fun parseCalendarEvents(context: Context, fromDate: Long? = null, toDate: Long? = null): List<CalendarEvent> {
+    fun parseCalendarEvents(context: Context, fromDate: Long? = null, toDate: Long? = null): CalendarEvent {
         val events = mutableListOf<CalendarEvent>()
 
 
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(context as MainActivity, arrayOf(Manifest.permission.READ_CALENDAR), 1)
-            return events // Return empty list if no permission
-        }
+//        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(context as MainActivity, arrayOf(Manifest.permission.READ_CALENDAR), 1)
+//            return events // Return empty list if no permission
+//        }
 
         val contentResolver: ContentResolver = context.contentResolver
         val eventsUri: Uri = CalendarContract.Events.CONTENT_URI
@@ -92,10 +92,10 @@ class CalendarEvents {
                 events.add(event)
             }
         }
-        return events
+        return events[0]
     }
 
-    fun convertCalendarEventsToJSON(events: List<CalendarEvent>): String {
+    fun convertCalendarEventsToJSON(events: CalendarEvent): String {
         val gson = Gson()
         return gson.toJson(events)
     }
