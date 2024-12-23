@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.room.util.copy
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
@@ -55,6 +56,10 @@ object SharedData {
 
     var alreadyAddedAlarms = mutableListOf<Alarm>()
 
+    fun updateAlarms() {
+        val updatedList = alarms.value.toMutableList()
+        alarms.value = updatedList
+    }
     var currentAlarmIndex = alarms.value.size
     fun updateCurrAlarmIndex() {
         alarms.value.forEach{ it: Alarm ->
@@ -150,5 +155,23 @@ object SharedData {
             Log.e("Exception: ", e.toString())
             return null
         }
+    }
+
+
+    fun loadAlarms(context: Context): Collection<Alarm> {
+        val gson = Gson()
+        val sharedPreferences =
+            context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
+        val jsonString = sharedPreferences.getString("alarm0", null) ?: return emptyList()
+        val type = TypeToken.getParameterized(List::class.java, Alarm::class.java).type
+        return gson.fromJson(jsonString, type)
+    }
+
+    fun saveAlarms(context: Context, alarms: Collection<Alarm>) {
+        val gson = Gson()
+        val sharedPreferences =
+            context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
+        val jsonString = gson.toJson(alarms)
+        sharedPreferences.edit().putString("alarm0", jsonString).apply()
     }
 }

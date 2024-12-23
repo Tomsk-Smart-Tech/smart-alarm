@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
+import com.tomsksmarttech.smart_alarm_mobile.Screens
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
 class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +33,6 @@ class AlarmActivity : ComponentActivity() {
             AlarmNotif(
                 { stopAlarmService(this) }
             )
-
         }
     }
 
@@ -46,7 +47,9 @@ class AlarmActivity : ComponentActivity() {
         }
         context.startService(stopIntent)
         finish()
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("TARGET_ROUTE", Screens.Alarm.route)
+        }
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
         context.startActivity(intent)
         Log.d("ALARM", "stopAlarmService")
