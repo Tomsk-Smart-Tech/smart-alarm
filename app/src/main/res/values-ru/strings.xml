@@ -8,4 +8,5 @@
     <string name="alarm">Будильники</string>
     <string name="music">Музыка</string>
     <string name="title_alarms">Будильники</string>
+    <string name="edit_alarm">Выбрать этот трек</string>
 </resources>
