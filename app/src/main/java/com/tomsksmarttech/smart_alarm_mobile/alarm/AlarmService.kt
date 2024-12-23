@@ -12,6 +12,8 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.tomsksmarttech.smart_alarm_mobile.MainActivity
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
 class AlarmService : Service() {
 
@@ -32,26 +34,30 @@ class AlarmService : Service() {
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
-            "STOP_ALARM" -> stopAlarm()
+            "STOP_ALARM" -> {
+                val alarms = SharedData.loadAlarms(this)
+                Log.d("ALARM", "Loaded alarms: $alarms")
+                stopAlarm()
+            }
             else -> {
+                SharedData.saveAlarms(this, SharedData.alarms.value)
                 showAlarmActivity()
                 val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
                 if (!ringtoneUri.isNullOrEmpty()) {
                     playRingtone(ringtoneUri)
                 }
                 val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
-                .setContentTitle("alarmLabel")
-                .setContentText("Будильник сработал")
-                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setAutoCancel(true)
-                .build()
+                    .setContentTitle("alarmLabel")
+                    .setContentText("Будильник сработал")
+                    .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setAutoCancel(true)
+                    .build()
                 startForeground(1, notification)
                 wakeScreen()
             }
         }
-
         return START_STICKY
     }
 
@@ -60,6 +66,7 @@ class AlarmService : Service() {
         mediaPlayer?.release()
         mediaPlayer = null
         stopSelf()
+
     }
 
     private fun createNotificationChannel(context: Context) {

@@ -48,9 +48,14 @@ import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 
 const val durationMillis = 600
 class MainActivity : ComponentActivity() {
-
+    val targetRoute by lazy {
+        intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
+            ?: Screens.Home.route
+    }
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("LOG", "OnCreate")
+        targetRoute
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -58,8 +63,18 @@ class MainActivity : ComponentActivity() {
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
             SharedData.startLoadMusicJob(applicationContext)
         }
+        loadAlarms()
+
+        setContent {
+            SmartalarmmobileTheme {
+                BottomNavigationBar(targetRoute)
+            }
+        }
+    }
+
+    fun loadAlarms() {
         val tmp = loadListFromFile(this, key = "alarm0", Alarm::class.java)
-        Log.d("ALARM", "бляя" + tmp.toString())
+        Log.d("ALARM", "temp data loaded: " + tmp.toString())
         tmp?.forEach { it: Alarm ->
             Log.d("ALARM", it.toString())
             if (!SharedData.alarms.value.contains(it)) {
@@ -71,13 +86,8 @@ class MainActivity : ComponentActivity() {
         }
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
-
-        setContent {
-            SmartalarmmobileTheme {
-                BottomNavigationBar()
-            }
-        }
     }
+
     fun saveAlarms() {
         Log.d("ALARM", "before filter" + SharedData.alarms.value.toList().toString())
 
@@ -89,30 +99,34 @@ class MainActivity : ComponentActivity() {
             saveListAsJson(context = this, SharedData.alarms.value.toList(), key = "alarm0")
         }
     }
-    override fun onDestroy() {
-        Log.d("ALARM", "destr" + SharedData.alarms.value.toList().toString())
-        saveAlarms()
-        super.onDestroy()
+//    override fun onDestroy() {
+//        Log.d("ALARM", "destr" + SharedData.alarms.value.toList().toString())
+//        saveAlarms()
+//        super.onDestroy()
+//    }
+
+//    override fun onPause() {
+//        checkIfShouldSave()
+//        super.onPause()
+//    }
+
+    fun checkIfShouldSave() {
+        if (targetRoute != Screens.Home.route) {
+            Log.d("ALARM", "checkif " + SharedData.alarms.value.toList().toString())
+            saveAlarms()
+            try {
+                SharedData.updateAlarms()
+            } catch (e: Exception) {
+                Log.d("ALARMS", e.toString())
+            }
+        }
     }
-
-    override fun onPause() {
-        Log.d("ALARM", "pause " +SharedData.alarms.value.toList().toString())
-//        SharedData.alarms.value.removeAll(mi)
-        saveAlarms()
-
-        super.onPause()
-    }
-
 
     override fun onStop() {
-        Log.d("ALARM", "stop " + SharedData.alarms.value.toList().toString())
-        saveAlarms()
+        checkIfShouldSave()
         super.onStop()
     }
-
 }
-
-
 sealed class Screens(val route: String) {
     data object Home : Screens("home_route")
     data object Alarm : Screens("alarm_route")
@@ -149,7 +163,9 @@ data class BottomNavigationItem(
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(
+    route: String,
+) {
     var navigationSelectedItem by remember {
         mutableIntStateOf(0)
     }
@@ -192,17 +208,20 @@ fun BottomNavigationBar() {
             }
         }
     ) { paddingValues ->
-        NavigationHost(navController, paddingValues)
+        NavigationHost(navController, paddingValues, route)
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun NavigationHost(navController : NavHostController, paddingValues : PaddingValues) {
+fun NavigationHost(navController : NavHostController,
+                   paddingValues : PaddingValues,
+                   defaultRoute : String
+) {
     NavHost(
         navController = navController,
-        startDestination = Screens.Home.route,
-        modifier = Modifier.padding(paddingValues = paddingValues)
+        startDestination = defaultRoute,
+        modifier = Modifier.padding(paddingValues = paddingValues),
     ) {
         composable(
             Screens.Home.route,
@@ -344,7 +363,6 @@ fun NavigationHost(navController : NavHostController, paddingValues : PaddingVal
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-@Preview
-fun BottomNavigationBarPreview() {
-    BottomNavigationBar()
+fun BottomNavigationBarPreview(route: String) {
+    BottomNavigationBar(route)
 }
