@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults.cardElevation
@@ -41,11 +42,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -59,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.window.Dialog
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
@@ -87,6 +92,7 @@ fun AlarmScreen() {
         onAlarmAdd = { newAlarm ->
             val updatedList = SharedData.alarms.value.toMutableList()
             updatedList.add(newAlarm)
+//            SharedData.alarms.value = updatedList
         },
         onAlarmRemove = { alarmId ->
             val updatedList = SharedData.alarms.value.toMutableList()
@@ -133,6 +139,12 @@ fun AlarmListScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+//                    val newAlarm = Alarm(
+//                        id = generateNewAlarmId(),
+//                        time = "08:00",
+//                        isEnabled = false,
+//                        label = "Новый будильник"
+//                    )
                     showDialog = true
                     Log.d("ALARM", "alarm added")
                 },
@@ -187,10 +199,12 @@ fun AlarmItem(
     var isExpanded by remember { mutableStateOf (false) }
     var isHapticEnabled by remember { mutableStateOf (false) }
     var isLabelChanged by remember { mutableStateOf (false) }
+    var shouldShowMusicScreen by remember { mutableStateOf(false) }
+    val navController = rememberNavController()
 
     Card(
         shape = RoundedCornerShape(8.dp),
-        elevation = cardElevation(),
+        elevation = cardElevation(defaultElevation = 15.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
@@ -234,7 +248,14 @@ fun AlarmItem(
             Column{
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .clickable { navController.navigate("music_route") {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    } },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically) {
                     Text("Мелодия будильника", fontWeight = FontWeight.Bold)
@@ -290,35 +311,29 @@ fun AlarmItem(
                 onDismiss = { isShowDialog = false }
             )
         }
-        if (isLabelChanged) {
-            ChangeLabelDialog(alarm, onConfirm = { newAlarm ->
-                alarm.label = newAlarm.label
-                isLabelChanged = false
-            }, onDismiss = {isLabelChanged = false})
-        }
     }
 }
 
 
-//@Composable
-//fun SetDialDialog(
-//    showDialog: MutableState<Boolean>
-//) {
-//    if (showDialog.value) {
-//        DialClockDialog(
-//            null,
-//            onConfirm = { timePickerState ->
-//                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-//                showDialog.value = false
-//                Log.d("SWITCH CHANGED", showDialog.value.toString())
-//            },
-//            onDismiss = {
-//                showDialog.value = false
-//                Log.d("SWITCH CHANGED", showDialog.value.toString())
-//            }
-//        )
-//    }
-//}
+@Composable
+fun SetDialDialog(
+    showDialog: MutableState<Boolean>
+) {
+    if (showDialog.value) {
+        DialClockDialog(
+            null,
+            onConfirm = { timePickerState ->
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
+            },
+            onDismiss = {
+                showDialog.value = false
+                Log.d("SWITCH CHANGED", showDialog.value.toString())
+            }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -346,7 +361,8 @@ fun DialClockDialog (
                     label = "Новый будильник"
                 )
                 Log.d("ALARM", "$newAlarm : ")
-                addAlarm(newAlarm)
+//                AlarmHandler.updateAlarm(newAlarm)
+                SharedData.addAlarm(newAlarm)
                 onConfirm(newAlarm)
                 updateCurrAlarmIndex()
             }
@@ -404,56 +420,11 @@ fun generateNewAlarmId(): Int {
     Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
     return currentAlarmIndex + 2
 }
-
-@Composable
-fun ChangeLabelDialog(
-    alarm: Alarm,
-    onDismiss: () -> Unit,
-    onConfirm: (Alarm) -> Unit,
-) {
-    var newLabel by remember { mutableStateOf(alarm.label) }
-
-    Dialog(onDismissRequest = { onDismiss() }) {
-        Surface(
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.background,
-            tonalElevation = 4.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
-                Text(
-                    text = "Change Label",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                TextField(
-                    value = newLabel,
-                    onValueChange = { newLabel = it },
-                    label = { Text("Label") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    TextButton(onClick = { onDismiss() }) {
-                        Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = {
-                        val updatedAlarm = alarm.copy(label = newLabel)
-                        onConfirm(updatedAlarm)
-                    }) {
-                        Text("Confirm")
-                    }
-                }
-            }
-        }
-    }
-}
+//object AlarmHandler{
+//    var alarm: Alarm = SharedData.alarms.value.first()
+//    fun updateAlarm(a: Alarm) {
+//
+//        alarm = a
+//
+//    }
+//}

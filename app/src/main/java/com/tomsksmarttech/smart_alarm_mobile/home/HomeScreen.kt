@@ -5,7 +5,10 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,8 +21,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import com.tomsksmarttech.smart_alarm_mobile.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
 
 @Composable
@@ -47,6 +53,27 @@ fun HomeScreen() {
     val context = LocalContext.current
     var events : String
     var isConnected by remember { mutableStateOf(false) }
+    val permission = android.Manifest.permission.READ_CALENDAR
+    var isPermissionGranted by remember {
+        mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    }
+
+
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
+            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+            Log.d("EVENTS", events)
+            isPermissionGranted = true
+        } else {
+            Toast(context).apply {
+                setText("Разрешение на доступ к календарю не предоставлено")
+                show()
+            }
+        }
+    }
 
     val settingsList = arrayListOf(
         Setting("Smart alarm") {},
@@ -64,6 +91,13 @@ fun HomeScreen() {
                 Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
             }
             Log.d("EVENTS", events)
+            if (isPermissionGranted) {
+                events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
+                Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+                Log.d("EVENTS", events)
+            } else {
+                launcher.launch(permission)
+            }
         },
         Setting("Об устройстве", SettingsFunctions()::about),
     )
@@ -125,7 +159,6 @@ fun SettingCard(setting: String, onClick: (context : Context) -> (Unit)) {
         }
     }
 }
-
 @Preview
 @Composable
 fun HomeScreenPreview() {
