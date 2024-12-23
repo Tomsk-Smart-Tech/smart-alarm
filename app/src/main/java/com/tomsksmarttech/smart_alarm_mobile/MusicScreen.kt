@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import SingleAlarmManager
 import android.annotation.SuppressLint
 import android.media.MediaPlayer
 import android.net.Uri
@@ -210,6 +211,7 @@ fun MusicLibrary(
     var showDialog by remember {
         mutableStateOf(false)
     }
+    val currentAlarmId by SharedData.currentAlarmId.collectAsState()
     mediaPlayer.setOnCompletionListener {
         isPlaying = false
     }
@@ -239,7 +241,7 @@ fun MusicLibrary(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(10.dp),
-                elevation  = CardDefaults.cardElevation(defaultElevation = 15.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 15.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -255,7 +257,9 @@ fun MusicLibrary(
                         Text(
                             audio.name,
                             textAlign = TextAlign.Left,
-                            modifier = Modifier.widthIn(min = 100.dp, max = 200.dp).basicMarquee(),
+                            modifier = Modifier
+                                .widthIn(min = 100.dp, max = 200.dp)
+                                .basicMarquee(),
 //                            overflow = TextOverflow.Ellipsis,
                             maxLines = 1,
                             fontWeight = FontWeight.Bold,
@@ -315,10 +319,17 @@ fun MusicLibrary(
                                 imageVector = Icons.Filled.AddCircle,
                                 contentDescription = "Create new alarm"
                             )
-                            Text(
-                                stringResource(R.string.create_new_alarm),
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            if (currentAlarmId == -1) {
+                                Text(
+                                    stringResource(R.string.create_new_alarm),
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else {
+                                Text(
+                                    "Выбрать этот трек",
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -326,14 +337,15 @@ fun MusicLibrary(
             SharedData.lastAudio = audio
         }
     }
-    if (showDialog) {
+    if (showDialog && currentAlarmId == -1) {
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
                 Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-                showDialog = false},
+                showDialog = false
+            },
             onDismiss = {
                 showDialog = false
             }
@@ -341,6 +353,10 @@ fun MusicLibrary(
         val alarmsState by alarms.collectAsState()
         val lastAlarm = alarmsState.lastOrNull()
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
+    } else if (showDialog) {
+        SingleAlarmManager.cancelAlarm(currentAlarmId)
+        SingleAlarmManager.setAlarm(currentAlarmId)
+        SharedData.setAlarmId(-1)
     }
 }
 

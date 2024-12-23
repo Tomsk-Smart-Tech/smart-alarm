@@ -52,8 +52,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.Screens
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
@@ -62,9 +64,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
-@Preview(showSystemUi = true)
 @Composable
-fun AlarmScreen() {
+fun AlarmScreen(navController: NavHostController) {
     val alarmsList by SharedData.alarms.collectAsState()
 
     AlarmListScreen(
@@ -86,7 +87,8 @@ fun AlarmScreen() {
             val updatedList = SharedData.alarms.value.toMutableList()
             updatedList.removeIf { it.id == alarmId }
             SharedData.alarms.value = updatedList
-        }
+        },
+        navController = navController
     )
 }
 
@@ -96,7 +98,8 @@ fun AlarmListScreen(
     alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmAdd: (Alarm) -> Unit,
-    onAlarmRemove: (Int) -> Unit
+    onAlarmRemove: (Int) -> Unit,
+    navController: NavHostController
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
@@ -133,7 +136,8 @@ fun AlarmListScreen(
                         alarm = alarm,
                         onAlarmChange = onAlarmChange,
                         onAlarmRemove = onAlarmRemove,
-                        alarmManager = SingleAlarmManager
+                        alarmManager = SingleAlarmManager,
+                        navController = navController
                     )
                 }
             }
@@ -147,7 +151,8 @@ fun AlarmListScreen(
                 Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-                showDialog = false},
+                showDialog = false
+            },
             onDismiss = { showDialog = false }
         )
         Log.d("CHECK SDLG", showDialog.toString())
@@ -159,15 +164,14 @@ fun AlarmItem(
     alarm: Alarm,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
-    alarmManager: SingleAlarmManager
+    alarmManager: SingleAlarmManager,
+    navController: NavHostController
 ) {
     val haptic = LocalHapticFeedback.current
     var isEnabled by remember { mutableStateOf(alarm.isEnabled) }
     var isShowDialog by remember { mutableStateOf(false) }
-    var isExpanded by remember { mutableStateOf (false) }
-    var isHapticEnabled by remember { mutableStateOf (false) }
-    var shouldShowMusicScreen by remember { mutableStateOf(false) }
-    val navController = rememberNavController()
+    var isExpanded by remember { mutableStateOf(false) }
+    var isHapticEnabled by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(8.dp),
@@ -175,7 +179,7 @@ fun AlarmItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
-            .clickable( onClick = { isExpanded = !isExpanded })
+            .clickable(onClick = { isExpanded = !isExpanded })
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -211,27 +215,43 @@ fun AlarmItem(
             )
         }
         AnimatedVisibility(visible = isExpanded) {
-            Column{
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .clickable { navController.navigate("music_route") {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            SharedData.setAlarmId(alarm.id)
+                            navController.navigate(Screens.Music.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                        launchSingleTop = true
-                        restoreState = true
-                    } },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Text("Мелодия будильника", fontWeight = FontWeight.Bold)
-                    Icon(ImageVector.vectorResource(R.drawable.ic_arrow_right), contentDescription = "Show additional settings")
+                        .padding(6.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Мелодия будильника", fontWeight = FontWeight.Bold)
+                        Icon(
+                            ImageVector.vectorResource(R.drawable.ic_arrow_right),
+                            contentDescription = "Show additional settings"
+                        )
+                    }
                 }
-                Row(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(6.dp),
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(6.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically) {
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text("Вибрация", fontWeight = FontWeight.Bold)
                     Switch(
                         modifier = Modifier.scale(0.75f, 0.75f),
@@ -244,7 +264,7 @@ fun AlarmItem(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable( onClick = {
+                        .clickable(onClick = {
                             onAlarmRemove(alarm.id)
                             SharedData.removeAlarm(alarm.id)
                             alarmManager.cancelAlarm(alarm.id)
@@ -252,11 +272,13 @@ fun AlarmItem(
                         })
                         .padding(6.dp),
                 ) {
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(6.dp),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically) {
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text("Удалить будильник", fontWeight = FontWeight.Bold)
                         Icon(
                             ImageVector.vectorResource(R.drawable.baseline_17mp_24),
@@ -270,7 +292,14 @@ fun AlarmItem(
             DialClockDialog(
                 alarm = alarm,
                 onConfirm = { timePickerState ->
-                    onAlarmChange(alarm.copy(timePickerState.id, timePickerState.time, timePickerState.isEnabled, label = timePickerState.label))
+                    onAlarmChange(
+                        alarm.copy(
+                            timePickerState.id,
+                            timePickerState.time,
+                            timePickerState.isEnabled,
+                            label = timePickerState.label
+                        )
+                    )
                     alarmManager.setAlarm(alarm.id)
                     isShowDialog = false
                 },
@@ -303,7 +332,7 @@ fun SetDialDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DialClockDialog (
+fun DialClockDialog(
     alarm: Alarm?,
     onConfirm: (Alarm) -> Unit,
     onDismiss: () -> Unit,
@@ -382,6 +411,7 @@ fun TimePickerDialog(
         text = { content() }
     )
 }
+
 fun generateNewAlarmId(): Int {
     Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
     return currentAlarmIndex + 2

@@ -176,8 +176,8 @@ fun BottomNavigationBar() {
                             )
                         },
                         onClick = {
-//                            navigationSelectedItem = index
                             if (currentRoute != item.route) {
+                                SharedData.setAlarmId(-1)
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -295,7 +295,7 @@ fun NavigationHost(navController : NavHostController, paddingValues : PaddingVal
                 }
             }
         ) {
-            AlarmScreen()
+            AlarmScreen(navController)
         }
 
         composable(
