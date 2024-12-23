@@ -13,13 +13,23 @@ class SettingsFunctions {
             mqttService.main("test/topic", msg)
             return true
         } catch (e: Exception) {
-            Log.e("ALARM", e.toString())
-
-            Toast.makeText(context, "Не удалось подключиться к устройству",
-                Toast.LENGTH_SHORT).show()
+            Log.d("MQTT", e.toString())
             return false
         }
     }
+
+    //    fun connectToDevice(context: Context, msg: String): Boolean {
+//        try {
+//            val mqttService = MqttService(context)
+//            mqttService.main("test/topic", msg)
+//            return true
+//        } catch (e: Exception) {
+//            Log.e("ALARM", e.toString())
+//            Toast.makeText(context, "Не удалось подключиться к устройству",
+//                Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//    }
     fun about(context: Context) {
         val toast = Toast(context)
         toast.setText(LoremIpsum().values.first())

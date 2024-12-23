@@ -1,47 +1,46 @@
 package com.tomsksmarttech.smart_alarm_mobile.mqtt
 
 import android.content.Context
+import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import com.hivemq.client.mqtt.datatypes.MqttQos
-import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient
+import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client
 
 class MqttService(private val context: Context) {
-    private lateinit var client: Mqtt3BlockingClient
-    private lateinit var topic: String
+
+    private lateinit var client: Mqtt3AsyncClient
     private val address = "192.168.1.112"
     private val port = 1883
+    private var topic: String = ""
 
     fun main(topic: String, msg: String) {
         this.topic = topic
-        client = Mqtt3Client.builder().identifier("ggg")
+        client = Mqtt3Client.builder()
+            .identifier("android_device_${Build.DEVICE}")
             .serverHost(address)
             .serverPort(port)
-            .buildBlocking()
-        connect()
-//        val message = "Hello, I'm ESP32 ^_^"
-        publish(msg)
-        subscribe()
+            .buildAsync()
+
+        connectAndPublish(msg)
     }
 
-    private fun connect() {
-        try {
-            val connAckMessage = client.connectWith()
-                .simpleAuth()
-                .username("android boy")
-                .password("123".toByteArray())
-                .applySimpleAuth()
-                .willPublish()
-                .topic(topic)
-                .qos(MqttQos.AT_LEAST_ONCE)
-                .payload("off".toByteArray())
-                .retain(true)
-                .applyWillPublish()
-                .send()
-            showToast("Connected: $connAckMessage")
-        } catch (e: Exception) {
-            showToast("Error connecting: ${e.message}")
-        }
+    private fun connectAndPublish(msg: String) {
+        client.connectWith()
+            .simpleAuth()
+            .username("android boy")
+            .password("123".toByteArray())
+            .applySimpleAuth()
+            .send()
+            .whenComplete { _, throwable ->
+                if (throwable != null) {
+                    Log.e("MqttService", "Ошибка подключения: ${throwable.message}")
+                } else {
+                    Log.i("MqttService", "Успешное подключение к брокеру")
+                    publish(msg)
+                }
+            }
     }
 
     private fun publish(msg: String) {
@@ -50,19 +49,12 @@ class MqttService(private val context: Context) {
             .qos(MqttQos.AT_LEAST_ONCE)
             .payload(msg.toByteArray())
             .send()
-    }
-
-    private fun subscribe() {
-        client.toAsync().subscribeWith()
-            .topicFilter(topic)
-            .qos(MqttQos.AT_LEAST_ONCE)
-            .callback { actResponse ->
-                showToast("Received: ${actResponse.payload}")
+            .whenComplete { _, throwable ->
+                if (throwable != null) {
+                    Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
+                } else {
+                    Log.i("MqttService", "Сообщение отправлено: $msg")
+                }
             }
-            .send()
-    }
-
-    private fun showToast(message: String) {
-//        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 }

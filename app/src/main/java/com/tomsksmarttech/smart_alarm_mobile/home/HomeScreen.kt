@@ -43,10 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
-import com.tomsksmarttech.smart_alarm_mobile.CalendarEvents
+import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.SharedData
-
 
 @Composable
 fun HomeScreen() {
@@ -57,8 +55,6 @@ fun HomeScreen() {
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
     }
-
-
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -77,7 +73,12 @@ fun HomeScreen() {
 
     val settingsList = arrayListOf(
         Setting("Smart alarm") {},
-        Setting("Подключение к устройству", {SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")}),
+        Setting("Подключение к устройству") {
+            SettingsFunctions().connectToDevice(
+                context,
+                "Hello, I'm ESP32 ^_^"
+            )
+        },
         Setting("Справка"){
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
             startActivity(context, browserIntent, null)
