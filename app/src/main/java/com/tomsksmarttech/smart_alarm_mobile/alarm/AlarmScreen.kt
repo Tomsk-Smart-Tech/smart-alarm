@@ -51,6 +51,8 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.rememberNavController
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
@@ -164,10 +166,12 @@ fun AlarmItem(
     var isShowDialog by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf (false) }
     var isHapticEnabled by remember { mutableStateOf (false) }
+    var shouldShowMusicScreen by remember { mutableStateOf(false) }
+    val navController = rememberNavController()
 
     Card(
         shape = RoundedCornerShape(8.dp),
-        elevation = cardElevation(),
+        elevation = cardElevation(defaultElevation = 15.dp),
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
@@ -210,7 +214,14 @@ fun AlarmItem(
             Column{
                 Row(modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .clickable { navController.navigate("music_route") {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    } },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically) {
                     Text("Мелодия будильника", fontWeight = FontWeight.Bold)

@@ -1,7 +1,6 @@
-package com.tomsksmarttech.smart_alarm_mobile
+package com.tomsksmarttech.smart_alarm_mobile.calendar
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
@@ -9,16 +8,13 @@ import android.database.Cursor
 import android.net.Uri
 import android.provider.CalendarContract
 import android.util.Log
-import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
+import com.tomsksmarttech.smart_alarm_mobile.MainActivity
 
 
 class CalendarEvents {
-    @SuppressLint("LongLogTag")
     data class CalendarEvent(
         val id: Long,
         val title: String?,
@@ -101,7 +97,6 @@ class CalendarEvents {
 
     fun convertCalendarEventsToJSON(events: List<CalendarEvent>): String {
         val gson = Gson()
-        Log.d("JSON", gson.toJson(events))
         return gson.toJson(events)
     }
 
