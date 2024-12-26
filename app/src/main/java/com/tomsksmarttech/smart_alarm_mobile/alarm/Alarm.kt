@@ -7,7 +7,7 @@ data class Alarm(
     val id: Int,
     var time: String, // "HH:mm"
     var isEnabled: Boolean,
-    val repeatDays: List<String>? = null,
+    var repeatDays: List<Boolean>? = null,
     var label: String,
     var musicUri: String? = null
 ) {

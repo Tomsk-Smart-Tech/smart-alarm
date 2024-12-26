@@ -8,4 +8,14 @@
     <string name="music">Music</string>
     <string name="title_alarms">Alarms</string>
     <string name="edit_alarm">Pick this track</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="monday">Monday</string>
+    <string name="tuesday">Tuesday</string>
+    <string name="wednesday">Wednesday</string>
+    <string name="thursday">Thursday</string>
+    <string name="friday">Friday</string>
+    <string name="saturday">Saturday</string>
+    <string name="sunday">Sunday</string>
+    <string name="haptic">Haptic</string>
 </resources>

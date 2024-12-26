@@ -9,4 +9,14 @@
     <string name="music">Музыка</string>
     <string name="title_alarms">Будильники</string>
     <string name="edit_alarm">Выбрать этот трек</string>
+    <string name="btn_confirm">Ок</string>
+    <string name="btn_cancel">Отмена</string>
+    <string name="monday">Понедельник</string>
+    <string name="tuesday">Вторник</string>
+    <string name="wednesday">Среда</string>
+    <string name="thursday">Четверг</string>
+    <string name="friday">Пятница</string>
+    <string name="saturday">Суббота</string>
+    <string name="sunday">Воскресенье</string>
+    <string name="haptic">Вибрация</string>
 </resources>
