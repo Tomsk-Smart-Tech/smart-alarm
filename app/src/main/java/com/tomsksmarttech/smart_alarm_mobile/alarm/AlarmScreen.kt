@@ -2,7 +2,11 @@ package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import SingleAlarmManager
 import android.R.attr.checked
+import android.os.Build
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +56,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +70,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -87,16 +93,36 @@ import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import kotlin.text.first
 
+
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun AlarmScreen(navController: NavHostController) {
-    val alarmsList by SharedData.alarms.collectAsState()
+    val context = LocalContext.current
+    var isPermissionGranted = false
+    val permission = android.Manifest.permission.USE_EXACT_ALARM
 
+    val alarmsList by SharedData.alarms.collectAsState()
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            isPermissionGranted = true
+        }
+    }
+    LaunchedEffect(Unit) {
+        if (context.checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            launcher.launch(permission)
+        }
+    }
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
             val index = SharedData.alarms.value.indexOfFirst { it.id == updatedAlarm.id }
             if (index != -1) {
+
                 val updatedList = SharedData.alarms.value.toMutableList()
                 updatedList[index] = updatedAlarm
                 SharedData.alarms.value = updatedList
@@ -193,11 +219,9 @@ fun AlarmListScreen(
             },
             onDismiss = { showDialog = false }
         )
-        Log.d("CHECK SDLG", showDialog.toString())
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmItem(
     alarm: Alarm,
@@ -207,28 +231,13 @@ fun AlarmItem(
     navController: NavHostController
 ) {
     val haptic = LocalHapticFeedback.current
-    val weekendsList = listOf(false, false, false, false, false, true, true)
     var isEnabled by remember { mutableStateOf(alarm.isEnabled) }
     var isShowDialog by remember { mutableStateOf(false) }
     var isExpanded by remember { mutableStateOf(false) }
     var isHapticEnabled by remember { mutableStateOf(false) }
     var isLabelChanged by remember { mutableStateOf(false) }
     var isDaysDialog by remember { mutableStateOf(false) }
-    var isDaysExpanded by remember { mutableStateOf(false) }
-    var isWeekends by remember { mutableStateOf(false) }
-    var isWorkDays by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    val selectedOptions = remember {
-        mutableStateListOf(false, false, false, false, false, false, false)
-    }
-    val days = listOf(
-        stringResource(R.string.monday),
-        stringResource(R.string.tuesday),
-        stringResource(R.string.wednesday),
-        stringResource(R.string.thursday), stringResource(R.string.friday),
-        stringResource(R.string.saturday), stringResource(R.string.sunday)
-    )
+
     Card(
         shape = RoundedCornerShape(8.dp),
         elevation = cardElevation(),
@@ -392,110 +401,160 @@ fun AlarmItem(
             }, onDismiss = { isLabelChanged = false })
         }
         if (isDaysDialog) {
-            ModalBottomSheet(
+            AlarmDaysPickerDialog(alarm = alarm,
+                onConfirm = {
+                    isDaysDialog = false},
+
+                onDismiss = {isDaysDialog = false})
+        }
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AlarmDaysPickerDialog(
+    alarm: Alarm,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val weekendsList = listOf(false, false, false, false, false, true, true)
+    var isDaysExpanded by remember { mutableStateOf(false) }
+    var isWeekends by remember { mutableStateOf(false) }
+    var isWorkDays by remember { mutableStateOf(false) }
+//    val sheetState = rememberModalBottomSheetState()
+//    val scope = rememberCoroutineScope()
+    val selectedOptions = remember {
+        mutableStateListOf(false, false, false, false, false, false, false)
+    }
+    var newRepeatDays = remember {
+        mutableStateOf(alarm.copy().repeatDays)
+    }
+    val days = listOf(
+        stringResource(R.string.monday),
+        stringResource(R.string.tuesday),
+        stringResource(R.string.wednesday),
+        stringResource(R.string.thursday), stringResource(R.string.friday),
+        stringResource(R.string.saturday), stringResource(R.string.sunday)
+    )
+
+    ModalBottomSheet(
+        modifier = Modifier
+//            .weight(1f)
+            .wrapContentHeight()
+            .padding(),
+        onDismissRequest = { onDismiss() })
+    {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text("Выберите дни недели:")
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .wrapContentHeight()
-                    .padding(),
-                onDismissRequest = { isDaysDialog = false })
-            {
-                Column(
-                    modifier = Modifier.padding(8.dp),
-                    horizontalAlignment = Alignment.Start
+                    .fillMaxWidth()
+                    .padding(6.dp),
+
                 ) {
-                    Text("Выберите дни недели:")
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(6.dp),
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Будни")
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(onCheckedChange = {
+                        Log.d("ALARM", "${newRepeatDays.value}")
+                        if (isWorkDays)  {
+                            isWorkDays = false
+                            if (alarm.repeatDays.isNullOrEmpty()) {
+//                                          newRepeatDays.value =
+                            } else {
 
-                        ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Будни")
-                            Spacer(modifier = Modifier.weight(1f))
-                            Switch(onCheckedChange = {}, checked = false)
+                            }
+                        } else {
+                            isWorkDays = true
                         }
-                    }
-                    Box(
+                    }, checked = isWorkDays)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Выходные")
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(onCheckedChange = {
+                        if (isWeekends) {
+                            isWeekends = false
+                            if (alarm.repeatDays.isNullOrEmpty()) {
+                                newRepeatDays.value = weekendsList
+                            } else {
+                                newRepeatDays.value = alarm.repeatDays!!.slice(0..5) + weekendsList.slice(5..7)
+                            }
+                        } else {
+                            isWeekends = true
+                            newRepeatDays.value = alarm.repeatDays
+                        }
+                    }, checked = isWeekends)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isDaysExpanded = !isDaysExpanded }
+                    .padding(6.dp),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Настроить...")
+                }
+            }
+            AnimatedVisibility(visible = isDaysExpanded) {
+                Box {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(6.dp),
+                            .wrapContentHeight()
+                            .padding(16.dp),
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Выходные")
-                            Spacer(modifier = Modifier.weight(1f))
-                            Switch(onCheckedChange = {
-                                if (isWeekends) {
-                                   if (alarm.repeatDays.isNullOrEmpty()) {
-                                       alarm.repeatDays = weekendsList
-                                   }
-                                } else {
-
+                        Column {
+                            MultiChoiceSegmentedButtonRow {
+                                days.forEachIndexed { index, label ->
+                                    SegmentedButton(
+                                        shape = SegmentedButtonDefaults.itemShape(
+                                            index = index,
+                                            count = days.size
+                                        ),
+                                        checked = selectedOptions[index],
+                                        onCheckedChange = {
+                                            selectedOptions[index] = !selectedOptions[index]
+                                        },
+                                        label = {
+                                            Text(days[index].first().toString())
+                                        }
+                                    )
                                 }
-                            }, checked = isWeekends)
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { isDaysExpanded = !isDaysExpanded }
-                            .padding(6.dp),
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Настроить...")
-                        }
-                    }
-                    AnimatedVisibility(visible = isDaysExpanded) {
-                        Box {
+                            }
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight()
-                                    .padding(16.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    MultiChoiceSegmentedButtonRow {
-                                        days.forEachIndexed { index, label ->
-                                            SegmentedButton(
-                                                shape = SegmentedButtonDefaults.itemShape(
-                                                    index = index,
-                                                    count = days.size
-                                                ),
-                                                checked = selectedOptions[index],
-                                                onCheckedChange = {
-                                                    selectedOptions[index] = !selectedOptions[index]
-                                                },
-                                                label = {
-                                                    Text(days[index].first().toString())
-                                                }
-                                            )
-                                        }
-                                    }
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        Button(
-                                            modifier = Modifier.padding(2.dp),
-                                            onClick = {
-                                                alarm.repeatDays = selectedOptions
-                                                isDaysDialog = false
-                                            },
-                                        ) {
-                                            Text(stringResource(R.string.btn_confirm))
-                                        }
-                                    }
+                                Spacer(modifier = Modifier.weight(1f))
+                                Button(
+                                    modifier = Modifier.padding(2.dp),
+                                    onClick = {
+                                        alarm.repeatDays = selectedOptions
+                                        Log.d("ALARM", "${alarm.repeatDays}")
+                                        onConfirm()
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.btn_confirm))
                                 }
                             }
                         }
@@ -505,27 +564,6 @@ fun AlarmItem(
         }
     }
 }
-
-
-//@Composable
-//fun SetDialDialog(
-//    showDialog: MutableState<Boolean>
-//) {
-//    if (showDialog.value) {
-//        DialClockDialog(
-//            null,
-//            onConfirm = { timePickerState ->
-//                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
-//                showDialog.value = false
-//                Log.d("SWITCH CHANGED", showDialog.value.toString())
-//            },
-//            onDismiss = {
-//                showDialog.value = false
-//                Log.d("SWITCH CHANGED", showDialog.value.toString())
-//            }
-//        )
-//    }
-//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
