@@ -10,7 +10,7 @@ class SettingsFunctions {
     fun connectToDevice(context: Context, msg: String): Boolean {
         try {
             val mqttService = MqttService(context)
-            mqttService.main("test/topic", msg)
+            mqttService.main("my/test/topic", msg)
             return true
         } catch (e: Exception) {
             Log.d("MQTT", e.toString())

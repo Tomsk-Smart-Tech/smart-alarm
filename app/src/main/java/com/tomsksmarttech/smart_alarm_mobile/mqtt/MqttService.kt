@@ -4,23 +4,28 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import com.hivemq.client.mqtt.MqttClient
 import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client
+import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
+import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
+import kotlin.text.Charsets.UTF_8
 
 class MqttService(private val context: Context) {
 
-    private lateinit var client: Mqtt3AsyncClient
-    private val address = "192.168.1.112"
-    private val port = 1883
+    private lateinit var client: Mqtt5AsyncClient
+    private val address = "6a41760a26ec43f2b0e532601ce780e1.s1.eu.hivemq.cloud"
+    private val port = 8883
     private var topic: String = ""
 
     fun main(topic: String, msg: String) {
         this.topic = topic
-        client = Mqtt3Client.builder()
+        client = Mqtt5Client.builder()
             .identifier("android_device_${Build.DEVICE}")
             .serverHost(address)
             .serverPort(port)
+            .sslWithDefaultConfig()
             .buildAsync()
 
         connectAndPublish(msg)
@@ -29,8 +34,8 @@ class MqttService(private val context: Context) {
     private fun connectAndPublish(msg: String) {
         client.connectWith()
             .simpleAuth()
-            .username("android boy")
-            .password("123".toByteArray())
+            .username("android_boy")
+            .password(UTF_8.encode("123456aA"))
             .applySimpleAuth()
             .send()
             .whenComplete { _, throwable ->
@@ -41,6 +46,7 @@ class MqttService(private val context: Context) {
                     publish(msg)
                 }
             }
+
     }
 
     private fun publish(msg: String) {
