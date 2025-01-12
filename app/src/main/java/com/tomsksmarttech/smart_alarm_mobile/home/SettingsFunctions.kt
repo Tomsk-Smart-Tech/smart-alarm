@@ -5,31 +5,25 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
+import kotlinx.coroutines.flow.first
 
 class SettingsFunctions {
-    fun connectToDevice(context: Context, msg: String): Boolean {
-        try {
-            val mqttService = MqttService(context)
+    suspend fun connectToDevice(context: Context, msg: String): Boolean {
+        val mqttService = MqttService(context)
+
+        return try {
             mqttService.main("my/test/topic", msg)
-            return true
+            mqttService.connectionState.first { it }
         } catch (e: Exception) {
-            Log.d("MQTT", e.toString())
-            return false
+            Log.e("MQTT", "Ошибка подключения: ${e.message}")
+            Toast.makeText(
+                context,
+                "Не удалось подключиться к устройству: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            false
         }
     }
-
-    //    fun connectToDevice(context: Context, msg: String): Boolean {
-//        try {
-//            val mqttService = MqttService(context)
-//            mqttService.main("test/topic", msg)
-//            return true
-//        } catch (e: Exception) {
-//            Log.e("ALARM", e.toString())
-//            Toast.makeText(context, "Не удалось подключиться к устройству",
-//                Toast.LENGTH_SHORT).show()
-//            return false
-//        }
-//    }
     fun about(context: Context) {
         val toast = Toast(context)
         toast.setText(LoremIpsum().values.first())

@@ -1,7 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import SingleAlarmManager
-import android.R.attr.checked
 import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -27,10 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -52,7 +48,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -63,8 +58,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -76,26 +71,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.Screens
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
-import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import kotlin.text.first
-
-
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -417,14 +406,34 @@ fun AlarmDaysPickerDialog(
     onConfirm: () -> Unit,
 ) {
     val weekendsList = listOf(false, false, false, false, false, true, true)
+    val workdaysList = listOf(true, true, true, true, true, false, false)
     var isDaysExpanded by remember { mutableStateOf(false) }
-    var isWeekends by remember { mutableStateOf(false) }
-    var isWorkDays by remember { mutableStateOf(false) }
-//    val sheetState = rememberModalBottomSheetState()
-//    val scope = rememberCoroutineScope()
-    val selectedOptions = remember {
-        mutableStateListOf(false, false, false, false, false, false, false)
+    var isWeekends by remember {
+        if (!alarm.repeatDays.isNullOrEmpty()) {
+            if (alarm.repeatDays!!.slice(5..6) == weekendsList.slice(5..6))
+                mutableStateOf(true)
+            else mutableStateOf(false)
+        } else {
+            mutableStateOf(false)
+        }
     }
+    var isWorkDays by remember {
+        if (!alarm.repeatDays.isNullOrEmpty()) {
+            if (alarm.repeatDays!!.slice(0..4) == workdaysList.slice(0..4))
+                mutableStateOf(true)
+            else mutableStateOf(false)
+        } else {
+            mutableStateOf(false)
+        }}
+    var selectedOptions = remember {
+        if (alarm.repeatDays.isNullOrEmpty()) {
+            mutableStateListOf(false, false, false, false, false, false, false)
+        } else {
+            alarm.repeatDays?.toMutableStateList()
+                ?: mutableStateListOf(false, false, false, false, false, false, false)
+        }
+    }
+
     var newRepeatDays = remember {
         mutableStateOf(alarm.copy().repeatDays)
     }
@@ -461,17 +470,21 @@ fun AlarmDaysPickerDialog(
                     Text("Будни")
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(onCheckedChange = {
-                        Log.d("ALARM", "${newRepeatDays.value}")
                         if (isWorkDays)  {
+                            val temp = selectedOptions.toList()
                             isWorkDays = false
-                            if (alarm.repeatDays.isNullOrEmpty()) {
-//                                          newRepeatDays.value =
-                            } else {
+                            selectedOptions = temp.toMutableStateList()
 
-                            }
                         } else {
+                            selectedOptions = if (alarm.repeatDays.isNullOrEmpty()) {
+                                workdaysList.toMutableStateList()
+                            } else {
+                                Log.d("ALARM", "values: ${selectedOptions.size}, ${workdaysList.size}")
+                                (selectedOptions.toList().slice(0..4) + workdaysList.slice(5..6)).toMutableStateList()
+                            }
                             isWorkDays = true
                         }
+                        Log.d("ALARM", "${newRepeatDays.value}")
                     }, checked = isWorkDays)
                 }
             }
@@ -487,17 +500,20 @@ fun AlarmDaysPickerDialog(
                     Text("Выходные")
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(onCheckedChange = {
+                        val temp = selectedOptions.toList()
                         if (isWeekends) {
                             isWeekends = false
-                            if (alarm.repeatDays.isNullOrEmpty()) {
-                                newRepeatDays.value = weekendsList
-                            } else {
-                                newRepeatDays.value = alarm.repeatDays!!.slice(0..5) + weekendsList.slice(5..7)
-                            }
+                            selectedOptions = temp.toMutableStateList()
                         } else {
+                            selectedOptions = if (alarm.repeatDays.isNullOrEmpty()) {
+                                weekendsList.toMutableStateList()
+                            } else {
+                                Log.d("ALARM", "values: ${selectedOptions.size}, ${weekendsList.size}")
+                                (selectedOptions.toList().slice(0..4) + weekendsList.slice(5..6)).toMutableStateList()
+                            }
                             isWeekends = true
-                            newRepeatDays.value = alarm.repeatDays
                         }
+                        Log.d("ALARM", newRepeatDays.value.toString())
                     }, checked = isWeekends)
                 }
             }
@@ -540,25 +556,25 @@ fun AlarmDaysPickerDialog(
                                     )
                                 }
                             }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                Button(
-                                    modifier = Modifier.padding(2.dp),
-                                    onClick = {
-                                        alarm.repeatDays = selectedOptions
-                                        Log.d("ALARM", "${alarm.repeatDays}")
-                                        onConfirm()
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.btn_confirm))
-                                }
-                            }
                         }
                     }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    modifier = Modifier.padding(2.dp),
+                    onClick = {
+                        alarm.repeatDays = selectedOptions
+                        Log.d("ALARM", "${alarm.repeatDays}")
+                        onConfirm()
+                    },
+                ) {
+                    Text(stringResource(R.string.btn_confirm))
                 }
             }
         }

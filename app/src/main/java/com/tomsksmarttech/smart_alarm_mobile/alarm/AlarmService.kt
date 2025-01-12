@@ -2,6 +2,7 @@ package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -11,8 +12,10 @@ import android.net.Uri
 import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.R
 
 class AlarmService : Service() {
 
@@ -25,10 +28,10 @@ class AlarmService : Service() {
     }
 
     private fun showAlarmActivity() {
-        val intent = Intent(this, AlarmActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        startActivity(intent)
+//        val intent = Intent(this, AlarmActivity::class.java).apply {
+//            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+//        }
+//        startActivity(intent)
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -40,25 +43,41 @@ class AlarmService : Service() {
             }
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
-                showAlarmActivity()
+//                showAlarmActivity()
+
                 val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
                 if (!ringtoneUri.isNullOrEmpty()) {
                     playRingtone(ringtoneUri)
                 }
+
+                val notificationIntent = Intent(this, AlarmActivity::class.java).apply {
+                    flags
+//                    = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    notificationIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // FLAG_IMMUTABLE для Android 12+
+                )
+
                 val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
-                    .setContentTitle("alarmLabel")
+                    .setContentTitle(resources.getString(R.string.app_name))
                     .setContentText("Будильник сработал")
                     .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
-                    .setAutoCancel(true)
+                    .setAutoCancel(true) // Убирает уведомление после нажатия
+                    .setContentIntent(pendingIntent) // Устанавливаем PendingIntent
                     .build()
+
                 startForeground(1, notification)
                 wakeScreen()
             }
         }
         return START_STICKY
     }
+
 
     private fun stopAlarm() {
         mediaPlayer?.stop()

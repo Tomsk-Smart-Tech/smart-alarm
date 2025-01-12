@@ -9,7 +9,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,16 +21,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,14 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
     var events : String
+    val coroutineScope = rememberCoroutineScope()
     var isConnected by remember { mutableStateOf(false) }
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
@@ -78,10 +75,16 @@ fun HomeScreen() {
     val settingsList = arrayListOf(
         Setting("Smart alarm") {},
         Setting("Подключение к устройству") {
-            SettingsFunctions().connectToDevice(
-                context,
-                "Hello, I'm ESP32 ^_^"
-            )
+            coroutineScope.launch {
+                try {
+                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
+                    if (isConnected) {
+                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_LONG).show()
+                }
+            }
         },
         Setting("Справка"){
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
@@ -90,10 +93,16 @@ fun HomeScreen() {
         Setting("Импортировать календарь") {
             events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2025").time, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time))
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
-            try {
-                isConnected = SettingsFunctions().connectToDevice(context, events)
-            } catch (e: Exception) {
-                Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
+            coroutineScope.launch {
+                try {
+                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
+                    if (isConnected) {
+                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
+                    }
+                    Log.d("ALARM", "is connected: $isConnected")
+                } catch (e: Exception) {
+                    Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
+                }
             }
             Log.d("EVENTS", events)
             if (isPermissionGranted) {
@@ -119,6 +128,7 @@ fun HomeScreen() {
                         .fillMaxWidth()
                         .height(20.dp))
                     Row {
+                        Log.d("ALARM", "is connected: $isConnected")
                         if (isConnected) {
                             Icon(painterResource(R.drawable.ic_dot), contentDescription = "Connected", tint = Color.Green)
                             Spacer(Modifier.fillMaxHeight().width(10.dp))
