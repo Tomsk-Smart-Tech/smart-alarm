@@ -1,5 +1,8 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
+import android.app.ActivityOptions
+import android.app.AlarmManager
+import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -9,10 +12,12 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
-import androidx.compose.ui.res.stringResource
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.R
@@ -28,13 +33,16 @@ class AlarmService : Service() {
     }
 
     private fun showAlarmActivity() {
-//        val intent = Intent(this, AlarmActivity::class.java).apply {
-//            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-//        }
-//        startActivity(intent)
+        val intent = Intent(this, AlarmActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+//        wakeScreen()
+        startActivity(intent)
     }
 
+
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+
         when (intent.action) {
             "STOP_ALARM" -> {
                 val alarms = SharedData.loadAlarms(this)
@@ -43,7 +51,11 @@ class AlarmService : Service() {
             }
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
-//                showAlarmActivity()
+                val isPhoneLocked = intent.getStringExtra("is_phone_locked")
+                if (isPhoneLocked == "true") {
+                    wakeScreen()
+                    showAlarmActivity()
+                }
 
                 val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
                 if (!ringtoneUri.isNullOrEmpty()) {
@@ -52,7 +64,6 @@ class AlarmService : Service() {
 
                 val notificationIntent = Intent(this, AlarmActivity::class.java).apply {
                     flags
-//                    = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
                 val pendingIntent = PendingIntent.getActivity(
                     this,
@@ -60,15 +71,16 @@ class AlarmService : Service() {
                     notificationIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // FLAG_IMMUTABLE для Android 12+
                 )
-
                 val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
                     .setContentTitle(resources.getString(R.string.app_name))
                     .setContentText("Будильник сработал")
                     .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
-                    .setAutoCancel(true) // Убирает уведомление после нажатия
-                    .setContentIntent(pendingIntent) // Устанавливаем PendingIntent
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+//                    .addAction(R.drawable.ic_alarm, getString(R.string.btn_cancel),
+//                        );
                     .build()
 
                 startForeground(1, notification)
@@ -126,16 +138,14 @@ class AlarmService : Service() {
     }
 
     private fun wakeScreen() {
-
-
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val wakeLock = powerManager.newWakeLock(
             PowerManager.FULL_WAKE_LOCK or
                     PowerManager.ACQUIRE_CAUSES_WAKEUP or
                     PowerManager.ON_AFTER_RELEASE,
             "AlarmService:WakeLock"
         )
-        wakeLock?.acquire(10 * 60 * 1000L)
+        wakeLock.acquire(10 * 60 * 100L)
     }
 
     override fun onDestroy() {

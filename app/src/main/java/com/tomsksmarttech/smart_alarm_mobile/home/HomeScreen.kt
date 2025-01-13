@@ -95,7 +95,7 @@ fun HomeScreen() {
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
             coroutineScope.launch {
                 try {
-                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
+                    isConnected = SettingsFunctions().connectToDevice(context, events)
                     if (isConnected) {
                         Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
                     }

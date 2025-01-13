@@ -29,8 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -72,7 +70,7 @@ class MainActivity : ComponentActivity() {
 
     fun loadAlarms() {
         val tmp = loadListFromFile(this, key = "alarm0", Alarm::class.java)
-        Log.d("ALARM", "temp data loaded: " + tmp.toString())
+        Log.d("ALARM", "temp data loaded: $tmp")
         tmp?.forEach { it: Alarm ->
             Log.d("ALARM", it.toString())
             if (!SharedData.alarms.value.contains(it)) {

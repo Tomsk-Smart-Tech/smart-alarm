@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.first
 class SettingsFunctions {
     suspend fun connectToDevice(context: Context, msg: String): Boolean {
         val mqttService = MqttService(context)
-
         return try {
             mqttService.main("my/test/topic", msg)
             mqttService.connectionState.first { it }
