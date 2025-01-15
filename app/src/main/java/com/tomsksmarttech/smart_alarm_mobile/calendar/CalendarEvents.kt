@@ -28,7 +28,7 @@ class CalendarEvents {
         val rrule: String? // Recurrence rule
     )
 
-    fun parseCalendarEvents(context: Context, fromDate: Long? = null, toDate: Long? = null): CalendarEvent {
+    fun parseCalendarEvents(context: Context, fromDate: Long? = null, toDate: Long? = null): List<CalendarEvent> {
         val events = mutableListOf<CalendarEvent>()
 
 
@@ -71,9 +71,11 @@ class CalendarEvents {
             selectionArgs = null
         }
 
+        val sortOrder = "${CalendarContract.Events.DTSTART} ASC"
 
 
-        val cursor: Cursor? = contentResolver.query(eventsUri, projection, selection, selectionArgs, null)
+
+        val cursor: Cursor? = contentResolver.query(eventsUri, projection, selection, selectionArgs, sortOrder)
 
         cursor?.use {
             while (it.moveToNext()) {
@@ -92,16 +94,15 @@ class CalendarEvents {
                 events.add(event)
             }
         }
-        return events[0]
+        return events
     }
 
-    fun convertCalendarEventsToJSON(events: CalendarEvent): String {
+    fun convertCalendarEventsToJSON(events: List<CalendarEvent>): String {
         val gson = Gson()
         return gson.toJson(events)
     }
 
     fun sendCalendarEventsToDevice(context: Context, events: List<CalendarEvent>) {
-
     }
 
 

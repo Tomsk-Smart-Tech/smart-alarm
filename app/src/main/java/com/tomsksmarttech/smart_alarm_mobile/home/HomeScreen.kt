@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,10 +61,21 @@ fun HomeScreen() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
-            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
-            Log.d("EVENTS", events)
-            isPermissionGranted = true
+            if (isConnected) {
+                coroutineScope.launch {
+                    events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
+                    val success = SettingsFunctions().connectToDevice(context, events)
+                    if (success) {
+                        Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+                        Log.d("EVENTS", events)
+                    } else {
+                        Toast.makeText(context, "При попытке импортирования событий произошла ошибка", Toast.LENGTH_LONG).show()
+                    }
+                }
+                isPermissionGranted = true
+            } else {
+                Toast.makeText(context, "Нет доступа к устройству, проверьте подключение", Toast.LENGTH_LONG).show()
+            }
         } else {
             Toast(context).apply {
                 setText("Разрешение на доступ к календарю не предоставлено")
@@ -91,24 +103,32 @@ fun HomeScreen() {
             startActivity(context, browserIntent, null)
         },
         Setting("Импортировать календарь") {
-            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2025").time, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time))
-            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
-            coroutineScope.launch {
-                try {
-                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
-                    if (isConnected) {
-                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
-                    }
-                    Log.d("ALARM", "is connected: $isConnected")
-                } catch (e: Exception) {
-                    Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
-                }
-            }
-            Log.d("EVENTS", events)
+//            coroutineScope.launch {
+//                try {
+//                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
+//                    if (isConnected) {
+////                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
+//                    }
+//                    Log.d("ALARM", "is connected: $isConnected")
+//                } catch (e: Exception) {
+//                    Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
+//                }
+//            }
             if (isPermissionGranted) {
-                events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
-                Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
-                Log.d("EVENTS", events)
+                if (isConnected) {
+                    coroutineScope.launch {
+                        events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, SimpleDateFormat("dd-MM-yyyy").parse("01-06-2025").time, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time))
+                        val success = SettingsFunctions().connectToDevice(context, events)
+                        if (success) {
+                            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+                            Log.d("EVENTS", events)
+                        } else {
+                            Toast.makeText(context, "При попытке импортирования событий произошла ошибка", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "Нет доступа к устройству, проверьте подключение", Toast.LENGTH_LONG).show()
+                }
             } else {
                 launcher.launch(permission)
             }
