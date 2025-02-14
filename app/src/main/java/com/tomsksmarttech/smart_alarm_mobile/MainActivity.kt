@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -29,18 +30,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
+import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import kotlinx.coroutines.launch
 
 const val durationMillis = 600
 class MainActivity : ComponentActivity() {
@@ -101,10 +106,18 @@ class MainActivity : ComponentActivity() {
 //        super.onDestroy()
 //    }
 
-//    override fun onPause() {
-//        checkIfShouldSave()
-//        super.onPause()
-//    }
+    override fun onPause() {
+        val sf = SettingsFunctions()
+        sf.connectToDevice(this)
+        val content = SharedData.alarms.value
+        val gson = Gson()
+        val jsonString = gson.toJson(content)
+        lifecycleScope.launch {
+            sf.sendMessage(jsonString)
+            Log.d("ALARMS","Content send: $jsonString")
+        }
+        super.onPause()
+    }
 
     fun checkIfShouldSave() {
         if (targetRoute != Screens.Home.route) {

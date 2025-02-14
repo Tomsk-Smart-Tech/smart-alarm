@@ -19,4 +19,11 @@
     <string name="saturday">Суббота</string>
     <string name="sunday">Воскресенье</string>
     <string name="haptic">Вибрация</string>
+    <string name="notif_import_calendar">События из календаря импортированы</string>
+    <string name="notif_calendar_access">Разрешение на доступ к календарю не предоставлено</string>
+    <string name="notif_device_connected_success">Устройство успешно подключено</string>
+    <string name="notif_device_connected_failed">Ошибка подключения</string>
+    <string name="tab_about">Справка</string>
+    <string name="about_device">Об устройстве</string>
+    <string name="btn_stop_alarm">Остановить</string>
 </resources>

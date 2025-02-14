@@ -1,8 +1,5 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
-import android.app.ActivityOptions
-import android.app.AlarmManager
-import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,12 +9,9 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.net.Uri
-import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.provider.Settings
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.R
@@ -26,6 +20,7 @@ class AlarmService : Service() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var alarmId: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -35,8 +30,8 @@ class AlarmService : Service() {
     private fun showAlarmActivity() {
         val intent = Intent(this, AlarmActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("is_haptic", SharedData.alarms.value.find { it.id == alarmId }?.isHaptic == true)
         }
-//        wakeScreen()
         startActivity(intent)
     }
 
@@ -52,12 +47,13 @@ class AlarmService : Service() {
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
                 val isPhoneLocked = intent.getStringExtra("is_phone_locked")
+                alarmId = intent.getStringExtra("alarm_id") as Int?
                 if (isPhoneLocked == "true") {
                     wakeScreen()
                     showAlarmActivity()
                 }
 
-                val ringtoneUri = intent.getStringExtra("RINGTONE_URI")
+                val ringtoneUri = intent.getStringExtra("ringtone_uri")
                 if (!ringtoneUri.isNullOrEmpty()) {
                     playRingtone(ringtoneUri)
                 }

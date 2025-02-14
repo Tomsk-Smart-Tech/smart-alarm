@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.paddingFrom
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -313,6 +312,7 @@ fun AlarmItem(
                         checked = isHapticEnabled, onCheckedChange = {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             isHapticEnabled = !isHapticEnabled
+                            alarm.isHaptic = isHapticEnabled
                         }
                     )
                 }
@@ -497,10 +497,10 @@ fun AlarmDaysPickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val temp = selectedOptions.toList()
                     Text("Выходные")
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(onCheckedChange = {
-                        val temp = selectedOptions.toList()
                         if (isWeekends) {
                             isWeekends = false
                             selectedOptions = temp.toMutableStateList()
@@ -604,7 +604,8 @@ fun DialClockDialog(
                     id = generateNewAlarmId(),
                     time = time,
                     isEnabled = true,
-                    label = "Новый будильник"
+                    label = "Новый будильник",
+                    isHaptic = false
                 )
                 Log.d("ALARM", "$newAlarm : ")
                 addAlarm(newAlarm)

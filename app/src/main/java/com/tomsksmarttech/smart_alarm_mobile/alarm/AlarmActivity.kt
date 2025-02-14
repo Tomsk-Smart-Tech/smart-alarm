@@ -3,7 +3,6 @@ package com.tomsksmarttech.smart_alarm_mobile.alarm
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
@@ -21,16 +20,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
+import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.Screens
-import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
 class AlarmActivity : ComponentActivity() {
+
+    val isHaptic = intent.getStringExtra("is_haptic")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                     WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
@@ -41,7 +48,7 @@ class AlarmActivity : ComponentActivity() {
         keyguardManager.requestDismissKeyguard(this, null)
         setContent {
             AlarmNotif(
-                { stopAlarmService(this) }
+                { stopAlarmService(this) }, isHaptic.toBoolean()
             )
         }
     }
@@ -69,8 +76,13 @@ class AlarmActivity : ComponentActivity() {
 //@PreviewParameter()
 @Composable
 fun AlarmNotif(
-    onStopAlarm: () -> Unit
+    onStopAlarm: () -> Unit,
+    isHaptic: (Boolean),
 ) {
+    val haptic = LocalHapticFeedback.current
+    while (isHaptic) {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -89,7 +101,7 @@ fun AlarmNotif(
                 onStopAlarm()
                 Log.d("ALARM", "compose onClick")
             }) {
-                Text(text = "Остановить")
+                Text(text = stringResource(R.string.btn_stop_alarm))
             }
 
         }

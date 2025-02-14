@@ -18,4 +18,11 @@
     <string name="saturday">Saturday</string>
     <string name="sunday">Sunday</string>
     <string name="haptic">Haptic</string>
+    <string name="notif_import_calendar">Calendar events have been imported</string>
+    <string name="notif_calendar_access">Permission to access the calendar has not been granted</string>
+    <string name="notif_device_connected_success">The device has been successfully connected</string>
+    <string name="notif_device_connected_failed">Connection error</string>
+    <string name="tab_about">Information</string>
+    <string name="about_device">About device</string>
+    <string name="btn_stop_alarm">Stop</string>
 </resources>

@@ -7,6 +7,7 @@ data class Alarm(
     val id: Int,
     var time: String, // "HH:mm"
     var isEnabled: Boolean,
+    var isHaptic: Boolean,
     var repeatDays: List<Boolean>? = null,
     var label: String,
     var musicUri: String? = null
@@ -15,7 +16,7 @@ data class Alarm(
         try {
         return time.substring(0, endIndex = 2)
         } catch (e: Exception) {
-            Log.e("ERROR", "er ${time} : ${alarms.value}")
+            Log.e("ERROR", "er $time : ${alarms.value}")
             return ""
         }
     }

@@ -15,7 +15,7 @@ class AlarmReceiver : BroadcastReceiver() {
         Log.d("AlarmReceiver", "Alarm triggered with ringtone: $ringtoneUri")
 
         val serviceIntent = Intent(context, AlarmService::class.java).apply {
-            putExtra("RINGTONE_URI", ringtoneUri)
+            putExtra("ringtone_uri", ringtoneUri)
             putExtra("alarm_id", alarm)
             putExtra("is_phone_locked", isPhoneLocked)
         }

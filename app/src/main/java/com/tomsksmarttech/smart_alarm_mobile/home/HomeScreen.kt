@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -61,12 +62,13 @@ fun HomeScreen() {
     ) { isGranted ->
         if (isGranted) {
             events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
-            Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
+            Toast.makeText(context,
+                context.getString(R.string.notif_import_calendar), Toast.LENGTH_LONG).show()
             Log.d("EVENTS", events)
             isPermissionGranted = true
         } else {
             Toast(context).apply {
-                setText("Разрешение на доступ к календарю не предоставлено")
+                setText(context.getString(R.string.notif_calendar_access))
                 show()
             }
         }
@@ -77,16 +79,20 @@ fun HomeScreen() {
         Setting("Подключение к устройству") {
             coroutineScope.launch {
                 try {
-                    isConnected = SettingsFunctions().connectToDevice(context, "Hello, I'm ESP32 ^_^")
+                    val sf = SettingsFunctions()
+                    sf.connectToDevice(context)
+                    isConnected = sf.sendMessage("Hello, I'm ESP32 ^_^")
                     if (isConnected) {
-                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context,
+                            context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Ошибка подключения", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context,
+                        context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG).show()
                 }
             }
         },
-        Setting("Справка"){
+        Setting(stringResource(R.string.tab_about)){
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
             startActivity(context, browserIntent, null)
         },
@@ -95,13 +101,15 @@ fun HomeScreen() {
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
             coroutineScope.launch {
                 try {
-                    isConnected = SettingsFunctions().connectToDevice(context, events)
+                    val sf = SettingsFunctions()
+                    sf.connectToDevice(context)
+                    isConnected = sf.sendMessage(events)
                     if (isConnected) {
-                        Toast.makeText(context, "Устройство успешно подключено", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
                     }
                     Log.d("ALARM", "is connected: $isConnected")
                 } catch (e: Exception) {
-                    Toast.makeText(context, "ОШИБКА", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG).show()
                 }
             }
             Log.d("EVENTS", events)
@@ -113,7 +121,7 @@ fun HomeScreen() {
                 launcher.launch(permission)
             }
         },
-        Setting("Об устройстве", SettingsFunctions()::about),
+        Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
     )
 
     Column (horizontalAlignment = Alignment.CenterHorizontally) {
@@ -131,11 +139,17 @@ fun HomeScreen() {
                         Log.d("ALARM", "is connected: $isConnected")
                         if (isConnected) {
                             Icon(painterResource(R.drawable.ic_dot), contentDescription = "Connected", tint = Color.Green)
-                            Spacer(Modifier.fillMaxHeight().width(10.dp))
+                            Spacer(
+                                Modifier
+                                    .fillMaxHeight()
+                                    .width(10.dp))
                             Text(text = "Устройство подключено", fontWeight = FontWeight.Bold)
                         } else {
                             Icon(painterResource(R.drawable.ic_dot), contentDescription = "Disconnected", tint = Color.Red)
-                            Spacer(Modifier.fillMaxHeight().width(10.dp))
+                            Spacer(
+                                Modifier
+                                    .fillMaxHeight()
+                                    .width(10.dp))
                             Text(text = "Устройство не подключено", fontWeight = FontWeight.Bold)
                         }
                     }
