@@ -46,6 +46,8 @@ import androidx.core.content.ContextCompat.startActivity
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
 import kotlinx.coroutines.launch
+import java.time.Instant
+import kotlin.time.TimeMark
 
 @Composable
 fun HomeScreen() {
@@ -81,7 +83,7 @@ fun HomeScreen() {
                 try {
                     val sf = SettingsFunctions()
                     sf.connectToDevice(context)
-                    isConnected = sf.sendMessage("Hello, I'm ESP32 ^_^")
+                    isConnected = sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
                     if (isConnected) {
                         Toast.makeText(context,
                             context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
@@ -103,7 +105,7 @@ fun HomeScreen() {
                 try {
                     val sf = SettingsFunctions()
                     sf.connectToDevice(context)
-                    isConnected = sf.sendMessage(events)
+                    isConnected = sf.sendMessage(events, "mqtt/events")
                     if (isConnected) {
                         Toast.makeText(context, context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
                     }
@@ -114,7 +116,7 @@ fun HomeScreen() {
             }
             Log.d("EVENTS", events)
             if (isPermissionGranted) {
-                events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
+                events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, fromDate = Instant.now().toEpochMilli()))
                 Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
                 Log.d("EVENTS", events)
             } else {

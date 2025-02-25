@@ -342,7 +342,7 @@ fun MusicLibrary(
             onConfirm = { timePickerState ->
                 Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
                 showDialog = false
             },
             onDismiss = {

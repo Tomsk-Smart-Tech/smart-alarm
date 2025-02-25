@@ -69,7 +69,7 @@ class AlarmActivity : ComponentActivity() {
         }
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
         context.startActivity(intent)
-        Log.d("ALARM", "stopAlarmService")
+//        Log.d("ALARM", "stopAlarmService")
     }
 
 }
@@ -99,7 +99,6 @@ fun AlarmNotif(
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = {
                 onStopAlarm()
-                Log.d("ALARM", "compose onClick")
             }) {
                 Text(text = stringResource(R.string.btn_stop_alarm))
             }

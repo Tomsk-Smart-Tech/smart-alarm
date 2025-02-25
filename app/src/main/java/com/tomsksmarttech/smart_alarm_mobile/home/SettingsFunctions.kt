@@ -10,13 +10,12 @@ import kotlinx.coroutines.flow.first
 class SettingsFunctions {
     lateinit var mqttService: MqttService
     lateinit var context: Context
-    private val topic = "my/test/topic"
+//    private val topic = ""
     fun connectToDevice(context: Context) {
         this.context = context
         mqttService = MqttService(context)
-
     }
-    suspend fun sendMessage(msg: String): Boolean {
+    suspend fun sendMessage(msg: String, topic: String): Boolean {
         return try {
             mqttService.main(topic, msg)
             mqttService.connectionState.first { it }

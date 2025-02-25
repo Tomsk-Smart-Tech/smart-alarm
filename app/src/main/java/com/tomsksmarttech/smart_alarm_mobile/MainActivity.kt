@@ -92,8 +92,8 @@ class MainActivity : ComponentActivity() {
     fun saveAlarms() {
         Log.d("ALARM", "before filter" + SharedData.alarms.value.toList().toString())
 
-        SharedData.alarms.value.removeAll { it: Alarm ->
-            it.id == -1 || SharedData.alreadyAddedAlarms.contains(it)
+        SharedData.alarms.value.removeAll { it: Alarm? ->
+            it!!.id == -1 || SharedData.alreadyAddedAlarms.contains(it)
         }
         if (!SharedData.alarms.value.isEmpty()) {
             Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
@@ -113,14 +113,16 @@ class MainActivity : ComponentActivity() {
         val gson = Gson()
         val jsonString = gson.toJson(content)
         lifecycleScope.launch {
-            sf.sendMessage(jsonString)
+            sf.sendMessage(jsonString, "mqtt/alarms")
             Log.d("ALARMS","Content send: $jsonString")
         }
+        Log.d("HELP PLEASE", "check if should save")
+        checkIfShouldSave()
         super.onPause()
     }
 
     fun checkIfShouldSave() {
-        if (targetRoute != Screens.Home.route) {
+//        if (targetRoute != Screens.Home.route) {
             Log.d("ALARM", "checkif " + SharedData.alarms.value.toList().toString())
             saveAlarms()
             try {
@@ -128,7 +130,7 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.d("ALARMS", e.toString())
             }
-        }
+//        } else Log.d("HELP PLEASE", targetRoute)
     }
 
     override fun onStop() {

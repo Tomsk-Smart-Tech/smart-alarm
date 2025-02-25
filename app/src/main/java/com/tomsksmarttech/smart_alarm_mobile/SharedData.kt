@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.ContextCompat
-import androidx.room.util.copy
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
@@ -33,9 +32,10 @@ object SharedData {
 
     var lastAudio: Audio? = null
     val alarms = MutableStateFlow(
-        mutableListOf(
-            Alarm(-1, "", false, label = "")
-        )
+        mutableListOf<Alarm?>()
+//        mutableListOf(
+//            Alarm(-1, "", false, label = "", isHaptic = false, repeatDays = listOf(), musicUri = "")
+//        )
     )
 
     fun setAlarmId(id: Int) {
@@ -50,7 +50,7 @@ object SharedData {
 
     fun removeAlarm(id: Int) {
         val updatedList = alarms.value.toMutableList()
-        updatedList.removeIf { it.id == id }
+        updatedList.removeIf { it!!.id == id }
         alarms.value = updatedList
     }
 
@@ -62,8 +62,11 @@ object SharedData {
     }
     var currentAlarmIndex = alarms.value.size
     fun updateCurrAlarmIndex() {
-        alarms.value.forEach{ it: Alarm ->
-            if (it.id > currentAlarmIndex) currentAlarmIndex = it.id
+        if (alarms.value.isEmpty()) {return;}
+        else {
+            alarms.value.forEach {
+                if (it!!.id > currentAlarmIndex) currentAlarmIndex = it.id
+            }
         }
     }
 
@@ -167,7 +170,7 @@ object SharedData {
         return gson.fromJson(jsonString, type)
     }
 
-    fun saveAlarms(context: Context, alarms: Collection<Alarm>) {
+    fun saveAlarms(context: Context, alarms: MutableList<Alarm?>) {
         val gson = Gson()
         val sharedPreferences =
             context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)

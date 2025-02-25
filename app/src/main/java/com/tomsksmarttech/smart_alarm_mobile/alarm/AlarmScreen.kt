@@ -81,6 +81,7 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
+import kotlinx.coroutines.flow.update
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -90,40 +91,36 @@ import kotlin.text.first
 @Composable
 fun AlarmScreen(navController: NavHostController) {
     val context = LocalContext.current
-    var isPermissionGranted = false
+    var isPermissionGranted by remember { mutableStateOf(false) }
     val permission = android.Manifest.permission.USE_EXACT_ALARM
 
     val alarmsList by SharedData.alarms.collectAsState()
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            isPermissionGranted = true
-        }
+        isPermissionGranted = isGranted
     }
+
     LaunchedEffect(Unit) {
         if (context.checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             launcher.launch(permission)
         }
     }
+
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
-            val index = SharedData.alarms.value.indexOfFirst { it.id == updatedAlarm.id }
-            if (index != -1) {
-                val updatedList = SharedData.alarms.value.toMutableList()
-                updatedList[index] = updatedAlarm
-                SharedData.alarms.value = updatedList
+            SharedData.alarms.update { alarms ->
+                alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
             }
         },
-        onAlarmAdd = { newAlarm ->
-            val updatedList = SharedData.alarms.value.toMutableList()
-            updatedList.add(newAlarm)
+        onAlarmAdd = {
+            newAlarm ->
+            SharedData.alarms.update { alarms ->
+                (alarms + newAlarm).toMutableList() }
         },
         onAlarmRemove = { alarmId ->
-            val updatedList = SharedData.alarms.value.toMutableList()
-            updatedList.removeIf { it.id == alarmId }
-            SharedData.alarms.value = updatedList
+            SharedData.alarms.update { alarms -> alarms.filter { it!!.id != alarmId }.toMutableList() }
         },
         navController = navController
     )
@@ -132,9 +129,9 @@ fun AlarmScreen(navController: NavHostController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(
-    alarms: List<Alarm>,
+    alarms: MutableList<Alarm?>,
     onAlarmChange: (Alarm) -> Unit,
-    onAlarmAdd: (Alarm) -> Unit,
+    onAlarmAdd: (Alarm?) -> Unit,
     onAlarmRemove: (Int) -> Unit,
     navController: NavHostController
 ) {
@@ -183,15 +180,13 @@ fun AlarmListScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             items(alarms) { alarm ->
-                if (alarm.id != -1) {
-                    AlarmItem(
-                        alarm = alarm,
-                        onAlarmChange = onAlarmChange,
-                        onAlarmRemove = onAlarmRemove,
-                        alarmManager = SingleAlarmManager,
-                        navController = navController
-                    )
-                }
+                AlarmItem(
+                    alarm = alarm!!,
+                    onAlarmChange = onAlarmChange,
+                    onAlarmRemove = onAlarmRemove,
+                    alarmManager = SingleAlarmManager,
+                    navController = navController
+                )
             }
         }
     }
@@ -202,7 +197,7 @@ fun AlarmListScreen(
                 onAlarmAdd(SharedData.alarms.value.last())
                 Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last().id)
+                SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
                 showDialog = false
             },
             onDismiss = { showDialog = false }
@@ -597,6 +592,7 @@ fun DialClockDialog(
             is24Hour = true,
         )
         TimePickerDialog(
+
             onDismiss = { onDismiss() },
             onConfirm = {
                 val time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
@@ -605,7 +601,8 @@ fun DialClockDialog(
                     time = time,
                     isEnabled = true,
                     label = "Новый будильник",
-                    isHaptic = false
+                    isHaptic = false,
+                    repeatDays = listOf(false,false,false,false,false,false,false)
                 )
                 Log.d("ALARM", "$newAlarm : ")
                 addAlarm(newAlarm)
@@ -651,12 +648,12 @@ fun TimePickerDialog(
         onDismissRequest = onDismiss,
         dismissButton = {
             TextButton(onClick = { onDismiss() }) {
-                Text("Dismiss")
+                Text(stringResource(R.string.btn_cancel))
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm() }) {
-                Text("OK")
+                Text(stringResource(R.string.btn_confirm))
             }
         },
         text = { content() }

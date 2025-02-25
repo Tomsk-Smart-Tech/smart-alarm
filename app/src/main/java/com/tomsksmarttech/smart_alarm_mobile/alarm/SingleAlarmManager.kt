@@ -26,8 +26,8 @@ object SingleAlarmManager {
     }
 
     fun setAlarm(id: Int) {
-        val currAlarm = alarms.value.find { it: Alarm ->
-            it.id == id
+        val currAlarm = alarms.value.find { it: Alarm? ->
+            it!!.id == id
         }
         if (currAlarm == null) return
         Log.d("ALARM", "HELP I WANT TO KILL MYSELF $id, ${currAlarm.getHours().toInt()}, ${currAlarm.getMinutes().toInt()} ")

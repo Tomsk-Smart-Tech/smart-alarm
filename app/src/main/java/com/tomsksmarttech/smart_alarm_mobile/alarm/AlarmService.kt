@@ -30,7 +30,7 @@ class AlarmService : Service() {
     private fun showAlarmActivity() {
         val intent = Intent(this, AlarmActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("is_haptic", SharedData.alarms.value.find { it.id == alarmId }?.isHaptic == true)
+            putExtra("is_haptic", SharedData.alarms.value.find { it!!.id == alarmId }?.isHaptic == true)
         }
         startActivity(intent)
     }

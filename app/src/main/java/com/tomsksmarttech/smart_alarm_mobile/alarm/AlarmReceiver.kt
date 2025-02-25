@@ -20,6 +20,5 @@ class AlarmReceiver : BroadcastReceiver() {
             putExtra("is_phone_locked", isPhoneLocked)
         }
         ContextCompat.startForegroundService(context, serviceIntent)
-
     }
 }
