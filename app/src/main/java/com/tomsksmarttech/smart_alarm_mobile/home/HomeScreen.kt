@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
+import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
 import kotlinx.coroutines.launch
@@ -54,6 +55,7 @@ fun HomeScreen() {
     val context = LocalContext.current
     var events : String
     val coroutineScope = rememberCoroutineScope()
+    val httpController = HttpController(context)
     var isConnected by remember { mutableStateOf(false) }
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {

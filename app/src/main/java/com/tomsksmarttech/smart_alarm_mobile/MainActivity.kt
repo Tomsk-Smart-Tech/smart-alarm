@@ -1,6 +1,5 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -30,8 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -41,30 +38,12 @@ import androidx.navigation.compose.rememberNavController
 import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.ConnectionPool
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
-import okio.BufferedSink
-import okio.source
-import okio.use
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 const val durationMillis = 600
 
@@ -110,89 +89,6 @@ class MainActivity : ComponentActivity() {
         SingleAlarmManager.init(this)
     }
 
-    suspend fun saveAlarms() {
-        coroutineScope {
-            Log.d("ALARM", "before filter" + SharedData.alarms.value.toList().toString())
-
-            SharedData.alarms.value.removeAll { it: Alarm? ->
-                SharedData.alreadyAddedAlarms.contains(it)
-            }
-
-//            launch(Dispatchers.IO) {
-//                for (alarm in SharedData.alarms.value) {
-//                    sendAudio(
-//                        applicationContext,
-//                        alarm!!.musicUri!!,
-//                        resources.getString(R.string.remote_host)
-//                    )
-//                    delay(500)
-//                }
-//            }
-            if (!SharedData.alarms.value.isEmpty()) {
-                Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
-                saveListAsJson(
-                    context = applicationContext,
-                    SharedData.alarms.value.toList(),
-                    key = "alarm_data"
-                )
-            }
-        }
-    }
-
-    //    Change type of uri from String to Uri
-    fun sendAudio(ctx: Context, uri: String, serverUrl: String) {
-        Log.d("Upload", "URI: $uri, Scheme: ${uri.toUri().scheme}")
-        val contentResolver = ctx.contentResolver
-        val inputStream = contentResolver.openInputStream(uri.toUri())
-        val fileName = DocumentFile.fromSingleUri(ctx, uri.toUri())!!.getName();
-
-        if (inputStream == null) {
-            Log.e("Upload", "Ошибка: не удалось открыть файл")
-            return
-        }
-
-        val requestBody = MultipartBody.Builder()
-            .setType(MultipartBody.FORM)
-            .addFormDataPart("filename", fileName!!)
-            .addFormDataPart("file", fileName, object : RequestBody() {
-                override fun contentType() = "audio/*".toMediaTypeOrNull()
-                override fun writeTo(sink: BufferedSink) {
-                    inputStream.source().use { source -> sink.writeAll(source) }
-                }
-            })
-            .build()
-
-        val request = Request.Builder()
-            .url(serverUrl)
-            .post(requestBody)
-            .build()
-
-        val client = OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .connectionPool(ConnectionPool(5, 5, TimeUnit.MINUTES))
-            .build()
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("Upload", "Ошибка загрузки: ${e}")
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                Log.d(
-                    "Uploading file",
-                    "Файл $fileName успешно загружен: ${response.body?.string()}"
-                )
-            }
-
-        })
-    }
-//    override fun onDestroy() {
-//        Log.d("ALARM", "destr" + SharedData.alarms.value.toList().toString())
-//        saveAlarms()
-//        super.onDestroy()
-//    }
-
     override fun onPause() {
         val sf = SettingsFunctions()
         sf.connectToDevice(this)
@@ -212,10 +108,9 @@ class MainActivity : ComponentActivity() {
         super.onPause()
     }
 
-    suspend fun checkIfShouldSave() {
+    fun checkIfShouldSave() {
 //        if (targetRoute != Screens.Home.route) {
         Log.d("ALARM", "checkif " + SharedData.alarms.value.toList().toString())
-        saveAlarms()
         try {
             SharedData.updateAlarms()
         } catch (e: Exception) {

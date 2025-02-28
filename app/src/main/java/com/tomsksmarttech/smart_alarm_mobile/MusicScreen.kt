@@ -51,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -203,6 +204,8 @@ fun MusicLibrary(
     isSearchClicked: Boolean = false,
     searchedText: String = ""
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    val httpController = HttpController(context)
     var mediaPlayer by remember { mutableStateOf(MediaPlayer()) }
     var isPlaying by remember { mutableStateOf(true) }
     var nowPlaying by remember { mutableStateOf<Uri?>(null) }
@@ -343,6 +346,7 @@ fun MusicLibrary(
                 Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
+                SharedData.saveAlarm(httpController, coroutineScope, alarms.value.last()!!)
                 showDialog = false
             },
             onDismiss = {

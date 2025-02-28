@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.rememberCompositionContext
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -75,15 +76,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.Screens
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -97,7 +102,6 @@ fun AlarmScreen(navController: NavHostController) {
     val permission = android.Manifest.permission.POST_NOTIFICATIONS
 
     val alarmsList by SharedData.alarms.collectAsState()
-
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -119,6 +123,7 @@ fun AlarmScreen(navController: NavHostController) {
         },
         onAlarmAdd = {
             newAlarm ->
+
             SharedData.alarms.update { alarms ->
                 (alarms + newAlarm).toMutableList() }
         },
@@ -134,12 +139,18 @@ fun AlarmScreen(navController: NavHostController) {
 fun AlarmListScreen(
     alarms: MutableList<Alarm?>,
     onAlarmChange: (Alarm) -> Unit,
-    onAlarmAdd: (Alarm?) -> Unit,
+    onAlarmAdd: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
     navController: NavHostController
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val httpController = HttpController(context)
+
     var showDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+
+
 
     Scaffold(
         contentWindowInsets = WindowInsets(8.dp),
@@ -186,6 +197,7 @@ fun AlarmListScreen(
                 if (!alarms.isEmpty()) {
                     AlarmItem(
                         alarm = alarm!!,
+                        onAlarmAdd = onAlarmAdd,
                         onAlarmChange = onAlarmChange,
                         onAlarmRemove = onAlarmRemove,
                         alarmManager = SingleAlarmManager,
@@ -199,11 +211,13 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-//                onAlarmAdd(SharedData.alarms.value.last())
                 Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
+
                 showDialog = false
+                Log.d("SAVEALARM", "save alarm")
+                SharedData.saveAlarm(httpController, coroutineScope, SharedData.alarms.value.last()!!)
             },
             onDismiss = { showDialog = false }
         )
@@ -213,11 +227,16 @@ fun AlarmListScreen(
 @Composable
 fun AlarmItem(
     alarm: Alarm,
+    onAlarmAdd: (Alarm) -> Unit,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
     alarmManager: SingleAlarmManager,
     navController: NavHostController
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val httpController = HttpController(context)
+
     val haptic = LocalHapticFeedback.current
     var isEnabled by remember { mutableStateOf(alarm.isEnabled) }
     var isShowDialog by remember { mutableStateOf(false) }
@@ -378,6 +397,7 @@ fun AlarmItem(
                         )
                     )
                     alarmManager.setAlarm(alarm.id)
+                    SharedData.saveAlarm(httpController, coroutineScope, alarms.value.last()!!)
                     isShowDialog = false
                 },
                 onDismiss = { isShowDialog = false }

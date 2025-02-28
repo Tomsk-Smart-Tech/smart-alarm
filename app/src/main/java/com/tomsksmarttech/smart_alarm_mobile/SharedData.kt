@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -36,6 +37,11 @@ object SharedData {
 
     )
 
+    fun saveAlarm(hc : HttpController, cs: CoroutineScope, alarm: Alarm) {
+        cs.launch{
+            hc.saveAlarm(alarm)
+        }
+    }
     fun setAlarmId(id: Int) {
         _currentAlarmId.value = id
     }
