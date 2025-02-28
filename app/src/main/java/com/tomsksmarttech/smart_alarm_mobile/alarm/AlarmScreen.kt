@@ -53,11 +53,13 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.currentCompositionLocalContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.rememberCompositionContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -92,9 +94,10 @@ import kotlin.text.first
 fun AlarmScreen(navController: NavHostController) {
     val context = LocalContext.current
     var isPermissionGranted by remember { mutableStateOf(false) }
-    val permission = android.Manifest.permission.USE_EXACT_ALARM
+    val permission = android.Manifest.permission.POST_NOTIFICATIONS
 
     val alarmsList by SharedData.alarms.collectAsState()
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -175,18 +178,20 @@ fun AlarmListScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
+            LazyColumn(
             contentPadding = paddingValues,
             modifier = Modifier.fillMaxSize()
         ) {
             items(alarms) { alarm ->
-                AlarmItem(
-                    alarm = alarm!!,
-                    onAlarmChange = onAlarmChange,
-                    onAlarmRemove = onAlarmRemove,
-                    alarmManager = SingleAlarmManager,
-                    navController = navController
-                )
+                if (!alarms.isEmpty()) {
+                    AlarmItem(
+                        alarm = alarm!!,
+                        onAlarmChange = onAlarmChange,
+                        onAlarmRemove = onAlarmRemove,
+                        alarmManager = SingleAlarmManager,
+                        navController = navController
+                    )
+                }
             }
         }
     }
@@ -194,7 +199,7 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                onAlarmAdd(SharedData.alarms.value.last())
+//                onAlarmAdd(SharedData.alarms.value.last())
                 Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
@@ -586,6 +591,7 @@ fun DialClockDialog(
     if (alarm == null) {
         Log.d("test", "creating new alarm")
         val currentTime = Calendar.getInstance()
+        val initialLabel = stringResource(R.string.new_alarm)
         val timePickerState = rememberTimePickerState(
             initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
             initialMinute = currentTime.get(Calendar.MINUTE),
@@ -600,9 +606,9 @@ fun DialClockDialog(
                     id = generateNewAlarmId(),
                     time = time,
                     isEnabled = true,
-                    label = "Новый будильник",
+                    label = initialLabel,
                     isHaptic = false,
-                    repeatDays = listOf(false,false,false,false,false,false,false)
+
                 )
                 Log.d("ALARM", "$newAlarm : ")
                 addAlarm(newAlarm)
@@ -662,7 +668,7 @@ fun TimePickerDialog(
 
 fun generateNewAlarmId(): Int {
     Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
-    return currentAlarmIndex + 2
+    return currentAlarmIndex + 1
 }
 
 @Composable

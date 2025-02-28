@@ -1,12 +1,9 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import android.content.Context
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.ParcelFileDescriptor
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -57,7 +54,6 @@ import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.ConnectionPool
-import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -67,9 +63,6 @@ import okhttp3.Response
 import okio.BufferedSink
 import okio.source
 import okio.use
-import java.io.File
-import java.io.FileDescriptor
-import java.io.FileInputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -102,7 +95,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun loadAlarms() {
-        val tmp = loadListFromFile(this, key = "alarm0", Alarm::class.java)
+        val tmp = loadListFromFile(this, key = "alarm_data", Alarm::class.java)
         Log.d("ALARM", "temp data loaded: $tmp")
         tmp?.forEach { it: Alarm ->
             Log.d("ALARM", it.toString())
@@ -125,23 +118,22 @@ class MainActivity : ComponentActivity() {
                 SharedData.alreadyAddedAlarms.contains(it)
             }
 
-            launch(Dispatchers.IO) {
-                for (alarm in SharedData.alarms.value) {
-                    sendAudio(
-                        applicationContext,
-                        alarm!!.musicUri!!,
-//                        resources.getString(R.string.local_host)
-                        resources.getString(R.string.remote_host)
-                    )
-                    delay(500)
-                }
-            }
+//            launch(Dispatchers.IO) {
+//                for (alarm in SharedData.alarms.value) {
+//                    sendAudio(
+//                        applicationContext,
+//                        alarm!!.musicUri!!,
+//                        resources.getString(R.string.remote_host)
+//                    )
+//                    delay(500)
+//                }
+//            }
             if (!SharedData.alarms.value.isEmpty()) {
                 Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
                 saveListAsJson(
                     context = applicationContext,
                     SharedData.alarms.value.toList(),
-                    key = "alarm0"
+                    key = "alarm_data"
                 )
             }
         }
@@ -207,12 +199,14 @@ class MainActivity : ComponentActivity() {
         val content = SharedData.alarms.value
         val gson = Gson()
         val jsonString = gson.toJson(content)
-        lifecycleScope.launch {
-            sf.sendMessage(jsonString, "mqtt/alarms")
-            Log.d("ALARMS", "Content send: $jsonString")
-        }
-        lifecycleScope.launch {
-            checkIfShouldSave()
+        if (jsonString != "[]") {
+            lifecycleScope.launch {
+                sf.sendMessage(jsonString, "mqtt/alarms")
+                Log.d("ALARMS", "Content send: $jsonString")
+            }
+            lifecycleScope.launch {
+                checkIfShouldSave()
+            }
         }
         Log.d("HELP PLEASE", "check if should save")
         super.onPause()
@@ -298,7 +292,7 @@ fun BottomNavigationBar(
                         },
                         onClick = {
                             if (currentRoute != item.route) {
-                                SharedData.setAlarmId(-1)
+                                SharedData.setAlarmId(0)
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true

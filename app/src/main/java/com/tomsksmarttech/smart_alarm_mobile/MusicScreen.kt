@@ -35,7 +35,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -318,6 +317,7 @@ fun MusicLibrary(
                                 imageVector = Icons.Filled.AddCircle,
                                 contentDescription = "Create new alarm"
                             )
+//                            TODO()
                             if (currentAlarmId == -1) {
                                 Text(
                                     stringResource(R.string.create_new_alarm),
@@ -336,7 +336,7 @@ fun MusicLibrary(
             SharedData.lastAudio = audio
         }
     }
-    if (showDialog && currentAlarmId == -1) {
+    if (showDialog && currentAlarmId == 0) {
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
@@ -352,10 +352,11 @@ fun MusicLibrary(
         val alarmsState by alarms.collectAsState()
         val lastAlarm = alarmsState.lastOrNull()
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
-    } else if (showDialog) {
+    } else
+        if (showDialog) {
         SingleAlarmManager.cancelAlarm(currentAlarmId)
         SingleAlarmManager.setAlarm(currentAlarmId)
-        SharedData.setAlarmId(-1)
+//        SharedData.setAlarmId(0)
     }
 }
 

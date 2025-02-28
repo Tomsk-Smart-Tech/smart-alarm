@@ -1,6 +1,9 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
+import android.net.Uri
 import android.util.Log
+import androidx.core.content.ContentProviderCompat.requireContext
+import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 
 data class Alarm(
@@ -8,9 +11,10 @@ data class Alarm(
     var time: String, // "HH:mm"
     var isEnabled: Boolean,
     var isHaptic: Boolean,
-    var repeatDays: List<Boolean>? = null,
+    var repeatDays: List<Boolean> = listOf(false,false,false,false,false,false,false),
     var label: String,
-    var musicUri: String? = null
+    var musicUri: String? = null,
+    var musicName: String? = null
 ) {
     fun getHours(): String {
         try {

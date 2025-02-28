@@ -27,15 +27,13 @@ object SharedData {
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
 
-    private val _currentAlarmId = MutableStateFlow(-1)
+    private val _currentAlarmId = MutableStateFlow(0)
     val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
     var lastAudio: Audio? = null
     val alarms = MutableStateFlow(
         mutableListOf<Alarm?>()
-//        mutableListOf(
-//            Alarm(-1, "", false, label = "", isHaptic = false, repeatDays = listOf(), musicUri = "")
-//        )
+
     )
 
     fun setAlarmId(id: Int) {
@@ -165,7 +163,7 @@ object SharedData {
         val gson = Gson()
         val sharedPreferences =
             context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
-        val jsonString = sharedPreferences.getString("alarm0", null) ?: return emptyList()
+        val jsonString = sharedPreferences.getString("alarm_data", null) ?: return emptyList()
         val type = TypeToken.getParameterized(List::class.java, Alarm::class.java).type
         return gson.fromJson(jsonString, type)
     }
@@ -175,6 +173,6 @@ object SharedData {
         val sharedPreferences =
             context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)
         val jsonString = gson.toJson(alarms)
-        sharedPreferences.edit().putString("alarm0", jsonString).apply()
+        sharedPreferences.edit().putString("alarm_data", jsonString).apply()
     }
 }
