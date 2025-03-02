@@ -50,7 +50,7 @@ class HttpController(val context: Context) {
             }
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("filename", fileName!!)
+                .addFormDataPart("filename", fileName)
                 .addFormDataPart("file", fileName, object : RequestBody() {
                     override fun contentType() = "audio/*".toMediaTypeOrNull()
                     override fun writeTo(sink: BufferedSink) {
