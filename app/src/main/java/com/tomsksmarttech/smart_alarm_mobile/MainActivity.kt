@@ -35,19 +35,20 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
-import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import kotlinx.coroutines.launch
 
 const val durationMillis = 600
 
 class MainActivity : ComponentActivity() {
+
+    val mqttController = MqttController(this, lifecycleScope)
+
     val targetRoute by lazy {
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
             ?: Screens.Home.route
@@ -55,10 +56,11 @@ class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("LOG", "OnCreate")
         targetRoute
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        mqttController.connectAndSync()
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
@@ -88,37 +90,6 @@ class MainActivity : ComponentActivity() {
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }
-
-    override fun onPause() {
-        val sf = SettingsFunctions()
-        sf.connectToDevice(this)
-        val content = SharedData.alarms.value
-        val gson = Gson()
-        val jsonString = gson.toJson(content)
-        if (jsonString != "[]") {
-            lifecycleScope.launch {
-                sf.sendMessage(jsonString, "mqtt/alarms")
-                Log.d("ALARMS", "Content send: $jsonString")
-            }
-            lifecycleScope.launch {
-                checkIfShouldSave()
-            }
-        }
-        Log.d("HELP PLEASE", "check if should save")
-        super.onPause()
-    }
-
-    fun checkIfShouldSave() {
-//        if (targetRoute != Screens.Home.route) {
-        Log.d("ALARM", "checkif " + SharedData.alarms.value.toList().toString())
-        try {
-            SharedData.updateAlarms()
-        } catch (e: Exception) {
-            Log.d("ALARMS", e.toString())
-        }
-//        } else Log.d("HELP PLEASE", targetRoute)
-    }
-
 }
 
 sealed class Screens(val route: String) {

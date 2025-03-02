@@ -1,5 +1,7 @@
 package com.tomsksmarttech.smart_alarm_mobile.mqtt
 
+import com.tomsksmarttech.smart_alarm_mobile.R
+
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -12,8 +14,10 @@ import kotlin.text.Charsets.UTF_8
 class MqttService(context: Context) {
 
     private lateinit var client: Mqtt5AsyncClient
-    private val address = "6a41760a26ec43f2b0e532601ce780e1.s1.eu.hivemq.cloud"
-    private val port = 8883
+    private val address = context.getString(R.string.broker_url)
+    private val username = context.getString(R.string.username)
+    private val password = context.getString(R.string.password)
+    private val port = context.getString(R.string.port).toInt()
     private var topic: String = ""
     val connectionState = MutableStateFlow(false)
 
@@ -32,8 +36,8 @@ class MqttService(context: Context) {
     private fun connectAndPublish(msg: String) {
         client.connectWith()
             .simpleAuth()
-            .username("android_boy")
-            .password(UTF_8.encode("123456aA"))
+            .username(username)
+            .password(UTF_8.encode(password))
             .applySimpleAuth()
             .send()
             .whenComplete { _, throwable ->
