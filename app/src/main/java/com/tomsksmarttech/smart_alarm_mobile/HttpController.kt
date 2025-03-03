@@ -94,7 +94,7 @@ class HttpController(val context: Context) {
         }
     }
 
-    suspend fun saveAlarm(alarm: Alarm) {
+    private suspend fun saveAlarm(alarm: Alarm) {
         coroutineScope {
             launch(Dispatchers.IO) {
                 sendAudio(

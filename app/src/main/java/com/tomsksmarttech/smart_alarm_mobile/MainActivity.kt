@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -35,6 +36,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
@@ -61,6 +67,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         mqttController.connect()
+        Log.d("CONNECT", "Connected to mqtt")
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
@@ -91,10 +98,31 @@ class MainActivity : ComponentActivity() {
                 SharedData.alreadyAddedAlarms.add(it)
             }
         }
+        Log.d("PENDING", "pending alarms: $pendingAlarms")
+        alarms.value.sortBy { it?.time }
+        pendingAlarms.sortBy { it.time }
         mqttController.send(pendingAlarms)
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }
+
+    override fun onStop() {
+        super.onStop()
+        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
+        WorkManager.getInstance(this).enqueue(saveWorkRequest)
+    }
+
+    class SaveAlarmsWorker(appContext: Context, workerParams: WorkerParameters) :
+        Worker(appContext, workerParams) {
+
+        override fun doWork(): Result {
+            val alarms = SharedData.alarms.value
+            SharedData.saveAlarms(applicationContext, alarms)
+            Log.d("ALARMS", "Будильники сохранены через WorkManager")
+            return Result.success()
+        }
+    }
+
 }
 
 sealed class Screens(val route: String) {

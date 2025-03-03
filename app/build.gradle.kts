@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.tomsksmarttech.smart_alarm_mobile"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.tomsksmarttech.smart_alarm_mobile"
         minSdk = 29
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.1"
 
@@ -45,7 +45,9 @@ android {
     }
 }
 
+
 dependencies {
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.hivemq.mqtt.client)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

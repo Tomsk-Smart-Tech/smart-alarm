@@ -7,9 +7,10 @@ import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-class MqttController(val context: Context, val lifecycle: LifecycleCoroutineScope) {
+class MqttController(val context: Context, val cs: CoroutineScope) {
 
     val sf = SettingsFunctions()
 
@@ -17,12 +18,12 @@ class MqttController(val context: Context, val lifecycle: LifecycleCoroutineScop
         sf.connectToDevice(context)
     }
 
-
-    fun send(list: List<Alarm>) {
+    fun send(list: List<Alarm?>) {
         val gson = Gson()
         val jsonString = gson.toJson(list)
+            Log.d("ALARMS", "Preparing to sending $jsonString $list")
         if (jsonString != "[]") {
-            lifecycle.launch {
+            cs.launch {
                 runCatching {
                     sf.sendMessage(jsonString, "mqtt/alarms")
                     Log.d("ALARMS", "Content sent: $jsonString")

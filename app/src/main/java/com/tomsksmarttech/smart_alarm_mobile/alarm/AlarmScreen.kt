@@ -84,7 +84,9 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
 import kotlinx.coroutines.flow.update
+import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -96,8 +98,11 @@ fun AlarmScreen(navController: NavHostController) {
     val context = LocalContext.current
     var isPermissionGranted by remember { mutableStateOf(false) }
     val permission = android.Manifest.permission.POST_NOTIFICATIONS
-
     val alarmsList by alarms.collectAsState()
+
+    val coroutineScope = rememberCoroutineScope()
+    val mqttController = MqttController(context, coroutineScope)
+    mqttController.connect()
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -113,9 +118,23 @@ fun AlarmScreen(navController: NavHostController) {
     AlarmListScreen(
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
+            updatedAlarm.isSended = false
             SharedData.alarms.update { alarms ->
                 alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
             }
+            alarms.value.sortBy { alarm ->
+                alarm?.let {
+                    val now = LocalTime.now()
+                    val alarmTime = it.time
+                    val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                    val localTime = LocalTime.parse(alarmTime, formatter)
+                    val duration = Duration.between(now, localTime)
+
+                    if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
+                }
+            }
+
+            mqttController.send(alarms.value)
         },
 //        onAlarmAdd = {
 //            newAlarm ->
@@ -210,7 +229,7 @@ fun AlarmListScreen(
 
                 showDialog = false
                 Log.d("SAVEALARM", "save alarm")
-                SharedData.saveAlarm(httpController, coroutineScope, SharedData.alarms.value.last()!!)
+                SharedData.saveAlarms(httpController, coroutineScope)
             },
             onDismiss = { showDialog = false }
         )
@@ -370,7 +389,7 @@ fun AlarmItem(
                         Text("Удалить будильник", fontWeight = FontWeight.Bold)
                         Icon(
                             ImageVector.vectorResource(R.drawable.ic_delete),
-                            contentDescription = "Show additional settings"
+                            contentDescription = "Delete alarm"
                         )
                     }
                 }
@@ -385,11 +404,12 @@ fun AlarmItem(
                             timePickerState.id,
                             timePickerState.time,
                             timePickerState.isEnabled,
-                            label = timePickerState.label
+                            label = timePickerState.label,
+                            isSended = false,
                         )
                     )
                     alarmManager.setAlarm(alarm.id)
-                    SharedData.saveAlarm(httpController, coroutineScope, alarms.value.last()!!)
+                    SharedData.saveAlarms(httpController, coroutineScope)
                     isShowDialog = false
                 },
                 onDismiss = { isShowDialog = false }
@@ -398,12 +418,14 @@ fun AlarmItem(
         if (isLabelChanged) {
             ChangeLabelDialog(alarm, onConfirm = { newAlarm ->
                 alarm.label = newAlarm.label
+                alarm.isSended = false
                 isLabelChanged = false
             }, onDismiss = { isLabelChanged = false })
         }
         if (isDaysDialog) {
             AlarmDaysPickerDialog(alarm = alarm,
                 onConfirm = {
+                    alarm.isSended = false
                     isDaysDialog = false},
 
                 onDismiss = {isDaysDialog = false})

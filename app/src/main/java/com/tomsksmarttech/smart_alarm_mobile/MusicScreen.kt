@@ -346,7 +346,7 @@ fun MusicLibrary(
                 Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
                 Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
-                SharedData.saveAlarm(httpController, coroutineScope, alarms.value.last()!!)
+                SharedData.saveAlarms(httpController, coroutineScope)
                 showDialog = false
             },
             onDismiss = {

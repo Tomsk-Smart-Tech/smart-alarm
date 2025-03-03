@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,9 +38,9 @@ object SharedData {
 
     )
 
-    fun saveAlarm(hc : HttpController, cs: CoroutineScope, alarm: Alarm) {
+    fun saveAlarms(hc : HttpController, cs: CoroutineScope) {
         cs.launch{
-            hc.saveAlarm(alarm)
+            hc.saveAlarms()
         }
     }
 

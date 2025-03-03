@@ -23,13 +23,13 @@ class AlarmService : Service(), MqttObserver {
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var alarmId: Int? = null
-    private val mqttSrv = MqttService(this)
+//    private val mqttSrv = MqttService(this)
     private var startAlarm: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel(this)
-        mqttSrv.addObserver(this)
+//        mqttSrv.addObserver(this)
     }
 
     override fun onNotify(msg: String?) {

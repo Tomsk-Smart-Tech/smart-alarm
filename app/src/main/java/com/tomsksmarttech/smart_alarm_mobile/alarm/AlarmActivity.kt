@@ -53,6 +53,7 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
+    @Deprecated("Deprecated.")
     override fun onBackPressed() {
         stopAlarmService(this)
         super.onBackPressed()
