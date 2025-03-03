@@ -42,6 +42,7 @@ object SharedData {
             hc.saveAlarm(alarm)
         }
     }
+
     fun setAlarmId(id: Int) {
         _currentAlarmId.value = id
     }
@@ -64,7 +65,9 @@ object SharedData {
         val updatedList = alarms.value.toMutableList()
         alarms.value = updatedList
     }
+
     var currentAlarmIndex = alarms.value.size
+
     fun updateCurrAlarmIndex() {
         if (alarms.value.isEmpty()) {return;}
         else {
@@ -84,7 +87,6 @@ object SharedData {
     fun addMusic(newMusic: Audio) {
         _musicList.value += newMusic
     }
-
 
     fun loadMusicLibrary(ctx: Context) {
         val selection = "${MediaStore.Audio.Media.DURATION} >= ?"
@@ -117,9 +119,6 @@ object SharedData {
                 _musicList.value += (Audio(name, duration, uri))
             }
         }
-//        Log.d("LISTSIZE", musicList.value.size.toString())
-
-//        val musicList = arrayListOf<com.tomsksmarttech.smart_alarm_mobile.Audio>()
     }
 
     fun checkPermission(
@@ -134,8 +133,6 @@ object SharedData {
             return false
         }
     }
-
-
 
     fun <T> saveListAsJson(context: Context, list: Collection<T>, key: String) {
         val gson = Gson()
@@ -164,7 +161,6 @@ object SharedData {
         }
     }
 
-
     fun loadAlarms(context: Context): Collection<Alarm> {
         val gson = Gson()
         val sharedPreferences =
@@ -181,4 +177,5 @@ object SharedData {
         val jsonString = gson.toJson(alarms)
         sharedPreferences.edit().putString("alarm_data", jsonString).apply()
     }
+
 }

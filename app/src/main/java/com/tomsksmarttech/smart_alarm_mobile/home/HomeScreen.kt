@@ -48,7 +48,6 @@ import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
 import kotlinx.coroutines.launch
 import java.time.Instant
-import kotlin.time.TimeMark
 
 @Composable
 fun HomeScreen() {

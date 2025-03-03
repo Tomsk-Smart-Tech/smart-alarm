@@ -15,16 +15,25 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttObserver
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 
-class AlarmService : Service() {
+class AlarmService : Service(), MqttObserver {
 
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var alarmId: Int? = null
+    private val mqttSrv = MqttService(this)
+    private var startAlarm: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel(this)
+        mqttSrv.addObserver(this)
+    }
+
+    override fun onNotify(msg: String?) {
+        startAlarm = msg != "connected"
     }
 
     private fun showAlarmActivity() {
@@ -48,7 +57,7 @@ class AlarmService : Service() {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
                 val isPhoneLocked = intent.getStringExtra("is_phone_locked")
                 alarmId = intent.getStringExtra("alarm_id") as Int?
-                if (isPhoneLocked == "true") {
+                if (isPhoneLocked == "true" && startAlarm) {
                     wakeScreen()
                     showAlarmActivity()
                 }

@@ -57,7 +57,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -98,7 +97,7 @@ fun AlarmScreen(navController: NavHostController) {
     var isPermissionGranted by remember { mutableStateOf(false) }
     val permission = android.Manifest.permission.POST_NOTIFICATIONS
 
-    val alarmsList by SharedData.alarms.collectAsState()
+    val alarmsList by alarms.collectAsState()
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -118,12 +117,12 @@ fun AlarmScreen(navController: NavHostController) {
                 alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
             }
         },
-        onAlarmAdd = {
-            newAlarm ->
-
-            SharedData.alarms.update { alarms ->
-                (alarms + newAlarm).toMutableList() }
-        },
+//        onAlarmAdd = {
+//            newAlarm ->
+//
+//            SharedData.alarms.update { alarms ->
+//                (alarms + newAlarm).toMutableList() }
+//        },
         onAlarmRemove = { alarmId ->
             SharedData.alarms.update { alarms -> alarms.filter { it!!.id != alarmId }.toMutableList() }
         },
@@ -136,18 +135,14 @@ fun AlarmScreen(navController: NavHostController) {
 fun AlarmListScreen(
     alarms: MutableList<Alarm?>,
     onAlarmChange: (Alarm) -> Unit,
-    onAlarmAdd: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
     navController: NavHostController
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val httpController = HttpController(context)
-
     var showDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-
-
 
     Scaffold(
         contentWindowInsets = WindowInsets(8.dp),
@@ -196,7 +191,6 @@ fun AlarmListScreen(
                 if (!alarms.isEmpty()) {
                     AlarmItem(
                         alarm = alarm!!,
-                        onAlarmAdd = onAlarmAdd,
                         onAlarmChange = onAlarmChange,
                         onAlarmRemove = onAlarmRemove,
                         alarmManager = SingleAlarmManager,
@@ -226,7 +220,6 @@ fun AlarmListScreen(
 @Composable
 fun AlarmItem(
     alarm: Alarm,
-    onAlarmAdd: (Alarm) -> Unit,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
     alarmManager: SingleAlarmManager,
@@ -424,53 +417,56 @@ fun AlarmDaysPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val weekendsList = listOf(false, false, false, false, false, true, true)
-    val workdaysList = listOf(true, true, true, true, true, false, false)
-    var isDaysExpanded by remember { mutableStateOf(false) }
-    var isWeekends by remember {
-        if (!alarm.repeatDays.isNullOrEmpty()) {
-            if (alarm.repeatDays!!.slice(5..6) == weekendsList.slice(5..6))
-                mutableStateOf(true)
-            else mutableStateOf(false)
-        } else {
-            mutableStateOf(false)
-        }
-    }
-    var isWorkDays by remember {
-        if (!alarm.repeatDays.isNullOrEmpty()) {
-            if (alarm.repeatDays!!.slice(0..4) == workdaysList.slice(0..4))
-                mutableStateOf(true)
-            else mutableStateOf(false)
-        } else {
-            mutableStateOf(false)
-        }}
+//    val weekendsList = listOf(false, false, false, false, false, true, true)
+//    val workdaysList = listOf(true, true, true, true, true, false, false)
+
+//    val originalRepeatDays = remember {
+//        alarm.repeatDays.toList()
+//    }
+
     var selectedOptions = remember {
-        if (alarm.repeatDays.isNullOrEmpty()) {
+        if (alarm.repeatDays.isEmpty()) {
             mutableStateListOf(false, false, false, false, false, false, false)
         } else {
-            alarm.repeatDays?.toMutableStateList()
-                ?: mutableStateListOf(false, false, false, false, false, false, false)
+            alarm.repeatDays.toMutableStateList()
         }
     }
 
-    var newRepeatDays = remember {
-        mutableStateOf(alarm.copy().repeatDays)
+    var isDaysExpanded by remember { mutableStateOf(false) }
+
+    val isAllWorkdaysSelected = selectedOptions.slice(0..4).all { it }
+    val isAllWeekendsSelected = selectedOptions.slice(5..6).all { it }
+
+    var isWorkDays by remember { mutableStateOf(isAllWorkdaysSelected) }
+    var isWeekends by remember { mutableStateOf(isAllWeekendsSelected) }
+
+
+    // Cостояния переключателей обновляются при каждом нажатии на MultiChoiceSegmentedButtonRow
+    // .all{ it } проверяет, что все элементы списка равны true
+    // таким образом, если пользователь сам выбирает будни, переключатель "выходные" сам включится, так же и с выходными
+    LaunchedEffect(selectedOptions.toList()) {
+        isWorkDays = selectedOptions.slice(0..4).all { it }
+        isWeekends = selectedOptions.slice(5..6).all { it }
     }
+
     val days = listOf(
         stringResource(R.string.monday),
         stringResource(R.string.tuesday),
         stringResource(R.string.wednesday),
-        stringResource(R.string.thursday), stringResource(R.string.friday),
-        stringResource(R.string.saturday), stringResource(R.string.sunday)
+        stringResource(R.string.thursday),
+        stringResource(R.string.friday),
+        stringResource(R.string.saturday),
+        stringResource(R.string.sunday)
     )
 
     ModalBottomSheet(
         modifier = Modifier
-//            .weight(1f)
             .wrapContentHeight()
             .padding(),
-        onDismissRequest = { onDismiss() })
-    {
+        onDismissRequest = {
+            onDismiss()
+        }
+    ) {
         Column(
             modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.Start
@@ -480,31 +476,27 @@ fun AlarmDaysPickerDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(6.dp),
-
-                ) {
+            ) {
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Будни")
                     Spacer(modifier = Modifier.weight(1f))
-                    Switch(onCheckedChange = {
-                        if (isWorkDays)  {
-                            val temp = selectedOptions.toList()
-                            isWorkDays = false
-                            selectedOptions = temp.toMutableStateList()
-
-                        } else {
-                            selectedOptions = if (alarm.repeatDays.isNullOrEmpty()) {
-                                workdaysList.toMutableStateList()
+                    Switch(
+                        onCheckedChange = {
+                            if (isWorkDays) {
+                                for (i in 0..4) {
+                                    selectedOptions[i] = false
+                                }
                             } else {
-                                Log.d("ALARM", "values: ${selectedOptions.size}, ${workdaysList.size}")
-                                (selectedOptions.toList().slice(0..4) + workdaysList.slice(5..6)).toMutableStateList()
+                                for (i in 0..4) {
+                                    selectedOptions[i] = true
+                                }
                             }
-                            isWorkDays = true
-                        }
-                        Log.d("ALARM", "${newRepeatDays.value}")
-                    }, checked = isWorkDays)
+                        },
+                        checked = isWorkDays
+                    )
                 }
             }
             Box(
@@ -516,24 +508,22 @@ fun AlarmDaysPickerDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val temp = selectedOptions.toList()
                     Text("Выходные")
                     Spacer(modifier = Modifier.weight(1f))
-                    Switch(onCheckedChange = {
-                        if (isWeekends) {
-                            isWeekends = false
-                            selectedOptions = temp.toMutableStateList()
-                        } else {
-                            selectedOptions = if (alarm.repeatDays.isNullOrEmpty()) {
-                                weekendsList.toMutableStateList()
+                    Switch(
+                        onCheckedChange = {
+                            if (isWeekends) {
+                                for (i in 5..6) {
+                                    selectedOptions[i] = false
+                                }
                             } else {
-                                Log.d("ALARM", "values: ${selectedOptions.size}, ${weekendsList.size}")
-                                (selectedOptions.toList().slice(0..4) + weekendsList.slice(5..6)).toMutableStateList()
+                                for (i in 5..6) {
+                                    selectedOptions[i] = true
+                                }
                             }
-                            isWeekends = true
-                        }
-                        Log.d("ALARM", newRepeatDays.value.toString())
-                    }, checked = isWeekends)
+                        },
+                        checked = isWeekends
+                    )
                 }
             }
             Box(
@@ -547,6 +537,7 @@ fun AlarmDaysPickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Настроить...")
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
             AnimatedVisibility(visible = isDaysExpanded) {
@@ -584,12 +575,20 @@ fun AlarmDaysPickerDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                TextButton(
+                    modifier = Modifier.padding(2.dp),
+                    onClick = {
+                        onDismiss()
+                    },
+                ) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     modifier = Modifier.padding(2.dp),
                     onClick = {
-                        alarm.repeatDays = selectedOptions
-                        Log.d("ALARM", "${alarm.repeatDays}")
+                        alarm.repeatDays = selectedOptions.toList()
+                        Log.d("ALARM", "Saved repeat days: ${alarm.repeatDays}")
                         onConfirm()
                     },
                 ) {

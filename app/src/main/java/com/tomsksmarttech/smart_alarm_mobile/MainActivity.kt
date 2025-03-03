@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        mqttController.connectAndSync()
+        mqttController.connect()
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun loadAlarms() {
+        var pendingAlarms = mutableListOf<Alarm>()
         val tmp = loadListFromFile(this, key = "alarm_data", Alarm::class.java)
         Log.d("ALARM", "temp data loaded: $tmp")
         tmp?.forEach { it: Alarm ->
@@ -83,10 +84,14 @@ class MainActivity : ComponentActivity() {
             if (!SharedData.alarms.value.contains(it)) {
                 SharedData.addAlarm(it)
             } else {
+                if (!it.isSended) {
+                    pendingAlarms.add(it)
+                }
                 Log.d("ALARM", "already have" + SharedData.alarms.value)
                 SharedData.alreadyAddedAlarms.add(it)
             }
         }
+        mqttController.send(pendingAlarms)
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }

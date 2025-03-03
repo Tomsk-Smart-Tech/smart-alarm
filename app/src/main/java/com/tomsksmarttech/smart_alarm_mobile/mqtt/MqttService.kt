@@ -1,13 +1,14 @@
 package com.tomsksmarttech.smart_alarm_mobile.mqtt
 
 import com.tomsksmarttech.smart_alarm_mobile.R
-
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.hivemq.client.mqtt.datatypes.MqttQos
+import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3MessageException
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
+import com.hivemq.client.mqtt.mqtt5.exceptions.Mqtt5MessageException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.text.Charsets.UTF_8
 
@@ -19,8 +20,10 @@ class MqttService(context: Context) {
     private val password = context.getString(R.string.password)
     private val port = context.getString(R.string.port).toInt()
     private var topic: String = ""
+    private var observers = mutableListOf<MqttObserver>()
     val connectionState = MutableStateFlow(false)
 
+    @Throws(Mqtt5MessageException::class)
     fun main(topic: String, msg: String) {
         this.topic = topic
         client = Mqtt5Client.builder()
@@ -31,6 +34,10 @@ class MqttService(context: Context) {
             .buildAsync()
 
         connectAndPublish(msg)
+    }
+
+    fun addObserver(mo: MqttObserver) {
+        observers.add(mo)
     }
 
     private fun connectAndPublish(msg: String) {
@@ -53,6 +60,12 @@ class MqttService(context: Context) {
             }
     }
 
+    fun subscribe() {
+        val msg = client.subscribeWith()
+        observers.forEach{ it.onNotify(msg.toString()) }
+    }
+
+
     private fun publish(msg: String) {
         client.publishWith()
             .topic(topic)
@@ -67,7 +80,4 @@ class MqttService(context: Context) {
                 }
             }
     }
-//    fun isConnectionEstablished(): Boolean {
-//        return connectionState
-//    }
 }
