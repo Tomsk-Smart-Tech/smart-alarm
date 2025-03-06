@@ -46,14 +46,15 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
-import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 
 const val durationMillis = 600
 
 class MainActivity : ComponentActivity() {
 
-    val mqttController = MqttController(this, lifecycleScope)
+    val ao = AlarmObserver()
 
     val targetRoute by lazy {
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
@@ -66,7 +67,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        mqttController.connect()
+        MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
@@ -101,7 +102,8 @@ class MainActivity : ComponentActivity() {
         Log.d("PENDING", "pending alarms: $pendingAlarms")
         alarms.value.sortBy { it?.time }
         pendingAlarms.sortBy { it.time }
-        mqttController.send(pendingAlarms)
+        MqttService.initCoroutineScope(lifecycleScope)
+        MqttService.sendList(pendingAlarms, this)
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }

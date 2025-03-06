@@ -84,7 +84,8 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
-import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
+//import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
 import kotlinx.coroutines.flow.update
 import java.time.Duration
 import java.time.LocalTime
@@ -101,8 +102,8 @@ fun AlarmScreen(navController: NavHostController) {
     val alarmsList by alarms.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
-    val mqttController = MqttController(context, coroutineScope)
-    mqttController.connect()
+//    val mqttController = MqttController(context, coroutineScope)
+//    mqttController.connect()
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -134,7 +135,8 @@ fun AlarmScreen(navController: NavHostController) {
                 }
             }
 
-            mqttController.send(alarms.value)
+            MqttService.sendList(alarms.value, context)
+            Log.d("SEND","I WANT TO SEND ${alarms.value}")
         },
 //        onAlarmAdd = {
 //            newAlarm ->

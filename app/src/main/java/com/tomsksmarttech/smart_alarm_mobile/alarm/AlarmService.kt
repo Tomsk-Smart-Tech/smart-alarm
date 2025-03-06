@@ -56,7 +56,12 @@ class AlarmService : Service(), MqttObserver {
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
                 val isPhoneLocked = intent.getStringExtra("is_phone_locked")
-                alarmId = intent.getStringExtra("alarm_id") as Int?
+                Log.d("ID", alarmId.toString())
+                alarmId = try {
+                    (intent.getStringExtra("alarm_id") as Int?)
+                } catch (e: Exception) {
+                    0
+                }
                 if (isPhoneLocked == "true" && startAlarm) {
                     wakeScreen()
                     showAlarmActivity()

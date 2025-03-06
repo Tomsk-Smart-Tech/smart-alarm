@@ -4,43 +4,56 @@ import com.tomsksmarttech.smart_alarm_mobile.R
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import com.google.gson.Gson
 import com.hivemq.client.mqtt.datatypes.MqttQos
-import com.hivemq.client.mqtt.mqtt3.exceptions.Mqtt3MessageException
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
-import com.hivemq.client.mqtt.mqtt5.exceptions.Mqtt5MessageException
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlin.properties.Delegates
 import kotlin.text.Charsets.UTF_8
 
-class MqttService(context: Context) {
+object MqttService {
 
     private lateinit var client: Mqtt5AsyncClient
-    private val address = context.getString(R.string.broker_url)
-    private val username = context.getString(R.string.username)
-    private val password = context.getString(R.string.password)
-    private val port = context.getString(R.string.port).toInt()
+    private lateinit var address: String
+    private lateinit var username: String
+    private lateinit var password: String
+    private var cs: CoroutineScope? = null
+    private var port by Delegates.notNull<Int>()
+
     private var topic: String = ""
-    private var observers = mutableListOf<MqttObserver>()
+    private var isConnected = false
+    private val observers = mutableListOf<MqttObserver>()
+    private val subscribedTopics = mutableSetOf<String>()
     val connectionState = MutableStateFlow(false)
 
-    @Throws(Mqtt5MessageException::class)
-    fun main(topic: String, msg: String) {
-        this.topic = topic
-        client = Mqtt5Client.builder()
-            .identifier("android_device_${Build.DEVICE}")
-            .serverHost(address)
-            .serverPort(port)
-            .sslWithDefaultConfig()
-            .buildAsync()
+    fun init(context: Context) {
+        address = context.getString(R.string.broker_url)
+        username = context.getString(R.string.username)
+        password = context.getString(R.string.password)
+        port = context.getString(R.string.port).toInt()
 
-        connectAndPublish(msg)
+        if (!::client.isInitialized) {
+            client = Mqtt5Client.builder()
+                .identifier("android_device_${Build.DEVICE}")
+                .serverHost(address)
+                .serverPort(port)
+                .sslWithDefaultConfig()
+                .buildAsync()
+        }
     }
 
-    fun addObserver(mo: MqttObserver) {
-        observers.add(mo)
+    fun addObserver(observer: MqttObserver) {
+        observers.add(observer)
     }
 
-    private fun connectAndPublish(msg: String) {
+    fun connect() {
+        if (isConnected) return
+
         client.connectWith()
             .simpleAuth()
             .username(username)
@@ -51,33 +64,88 @@ class MqttService(context: Context) {
                 if (throwable != null) {
                     connectionState.value = false
                     Log.e("MqttService", "Ошибка подключения: ${throwable.message}")
-                    throw throwable
                 } else {
+                    isConnected = true
                     connectionState.value = true
                     Log.i("MqttService", "Успешное подключение к брокеру")
-                    publish(msg)
                 }
             }
     }
 
-    fun subscribe() {
-        val msg = client.subscribeWith()
-        observers.forEach{ it.onNotify(msg.toString()) }
-    }
+    fun publish(topic: String, message: String) {
+        if (!isConnected) {
+            Log.e("MqttService", "Попытка отправить сообщение без подключения!")
+            return
+        }
 
-
-    private fun publish(msg: String) {
         client.publishWith()
             .topic(topic)
             .qos(MqttQos.AT_LEAST_ONCE)
-            .payload(msg.toByteArray())
+            .payload(message.toByteArray())
             .send()
             .whenComplete { _, throwable ->
                 if (throwable != null) {
                     Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
                 } else {
-                    Log.i("MqttService", "Сообщение отправлено: $msg")
+                    Log.i("MqttService", "Сообщение отправлено в $topic: $message")
                 }
             }
+    }
+
+    fun subscribe(topic: String) {
+        if (!isConnected) {
+            Log.e("MqttService", "Попытка подписки без подключения!")
+            return
+        }
+
+        if (subscribedTopics.contains(topic)) {
+            Log.i("MqttService", "Уже подписаны на топик: $topic")
+            return
+        }
+
+        client.subscribeWith()
+            .topicFilter(topic)
+            .qos(MqttQos.AT_LEAST_ONCE)
+            .callback { publishMessage ->
+                val receivedMsg = String(publishMessage.payloadAsBytes, UTF_8)
+                Log.i("MqttService", "Получено сообщение из $topic: $receivedMsg") // теперь получаем сообщения из различных топиков
+
+                observers.forEach { it.onNotify(receivedMsg) }
+            }
+            .send()
+            .whenComplete { _, throwable ->
+                if (throwable != null) {
+                    Log.e("MqttService", "Ошибка подписки: ${throwable.message}")
+                } else {
+                    subscribedTopics.add(topic) // добавление в список топиков
+                    Log.i("MqttService", "Подписались на топик: $topic")
+                }
+            }
+    }
+
+    fun initCoroutineScope(cs: CoroutineScope) {
+        this.cs = cs
+    }
+
+    fun sendList(list: List<Alarm?>, context: Context) {
+        val gson = Gson()
+        val jsonString = gson.toJson(list)
+        Log.d("ALARMS", "Preparing to sending $jsonString $list")
+        if (jsonString != "[]") {
+            cs?.launch {
+                runCatching {
+                    publish(topic, jsonString)
+                    subscribe(topic)
+                    Log.d("ALARMS", "Content sent: $jsonString")
+                    launch{
+                        SharedData.alarms.value.forEach { it?.isSended = true }
+                        Log.d("MQTT", "alarms sended, param changed")
+                    }
+                }.onFailure { error ->
+                    Log.e("ALARMS", "Failed to send message: ${error.localizedMessage}", error)
+                    SharedData.saveAlarms(context, SharedData.alarms.value)
+                }
+            }
+        }
     }
 }
