@@ -46,15 +46,19 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
+import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import kotlinx.coroutines.launch
 
 const val durationMillis = 600
 
 class MainActivity : ComponentActivity() {
 
-    val ao = AlarmObserver()
+    val ao = AlarmObserver(this)
+
+//    lateinit var mqttService: MqttService
 
     val targetRoute by lazy {
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
@@ -67,8 +71,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        MqttService.init(this)
+
+        MqttService.connect()
+
         MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
+
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
@@ -84,6 +93,8 @@ class MainActivity : ComponentActivity() {
     }
 
     fun loadAlarms() {
+        MqttService.subscribe("mqtt/sensors")
+
         var pendingAlarms = mutableListOf<Alarm>()
         val tmp = loadListFromFile(this, key = "alarm_data", Alarm::class.java)
         Log.d("ALARM", "temp data loaded: $tmp")

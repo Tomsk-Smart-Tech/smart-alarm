@@ -32,7 +32,7 @@ class AlarmService : Service(), MqttObserver {
 //        mqttSrv.addObserver(this)
     }
 
-    override fun onNotify(msg: String?) {
+    override fun onNotify(topic: String, msg: String?) {
         startAlarm = msg != "connected"
     }
 

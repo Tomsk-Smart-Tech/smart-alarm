@@ -38,6 +38,7 @@ object MqttService {
         port = context.getString(R.string.port).toInt()
 
         if (!::client.isInitialized) {
+            Log.d("MQTT", "init mqtt client")
             client = Mqtt5Client.builder()
                 .identifier("android_device_${Build.DEVICE}")
                 .serverHost(address)
@@ -73,6 +74,7 @@ object MqttService {
     }
 
     fun publish(topic: String, message: String) {
+        this.topic = topic
         if (!isConnected) {
             Log.e("MqttService", "Попытка отправить сообщение без подключения!")
             return
@@ -93,6 +95,7 @@ object MqttService {
     }
 
     fun subscribe(topic: String) {
+        this.topic = topic
         if (!isConnected) {
             Log.e("MqttService", "Попытка подписки без подключения!")
             return
@@ -105,12 +108,13 @@ object MqttService {
 
         client.subscribeWith()
             .topicFilter(topic)
+            .noLocal(true)
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { publishMessage ->
                 val receivedMsg = String(publishMessage.payloadAsBytes, UTF_8)
                 Log.i("MqttService", "Получено сообщение из $topic: $receivedMsg") // теперь получаем сообщения из различных топиков
 
-                observers.forEach { it.onNotify(receivedMsg) }
+                observers.forEach { it.onNotify(topic, receivedMsg) }
             }
             .send()
             .whenComplete { _, throwable ->

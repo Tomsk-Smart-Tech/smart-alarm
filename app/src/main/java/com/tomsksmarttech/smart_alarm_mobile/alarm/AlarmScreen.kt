@@ -134,7 +134,9 @@ fun AlarmScreen(navController: NavHostController) {
                     if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
                 }
             }
-
+            MqttService.subscribe("mqtt/alarms")
+//            MqttService.publish("mqtt/alarms", a)
+            MqttService.initCoroutineScope(coroutineScope)
             MqttService.sendList(alarms.value, context)
             Log.d("SEND","I WANT TO SEND ${alarms.value}")
         },
@@ -291,7 +293,14 @@ fun AlarmItem(
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     isEnabled = it
-                    onAlarmChange(alarm.copy(isEnabled = isEnabled))
+                    Log.d("ALARM", "$alarm")
+                    onAlarmChange(
+                        alarm.copy(
+                            isEnabled = isEnabled,
+                            repeatDays = alarm.repeatDays ?: listOf(false, false, false, false, false, false, false)
+                        )
+                    )
+
                     if (isEnabled) {
                         alarmManager.setAlarm(alarm.id)
                     } else {
@@ -407,6 +416,7 @@ fun AlarmItem(
                             timePickerState.time,
                             timePickerState.isEnabled,
                             label = timePickerState.label,
+                            repeatDays = timePickerState.repeatDays,
                             isSended = false,
                         )
                     )
@@ -449,7 +459,8 @@ fun AlarmDaysPickerDialog(
 //    }
 
     var selectedOptions = remember {
-        if (alarm.repeatDays.isEmpty()) {
+        if (alarm.repeatDays == null || alarm.repeatDays.isEmpty()) {
+            Log.d("ALARM","RD: ${alarm.repeatDays}")
             mutableStateListOf(false, false, false, false, false, false, false)
         } else {
             alarm.repeatDays.toMutableStateList()
@@ -650,6 +661,7 @@ fun DialClockDialog(
                     isEnabled = true,
                     label = initialLabel,
                     isHaptic = false,
+                    repeatDays = listOf(false,false,false,false,false,false,false),
 
                 )
                 Log.d("ALARM", "$newAlarm : ")
@@ -674,7 +686,8 @@ fun DialClockDialog(
             onDismiss = { onDismiss() },
             onConfirm = {
                 val updatedAlarm = alarm.copy(
-                    time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
+                    time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute),
+                    repeatDays = alarm.repeatDays?: listOf(false,false,false,false,false,false,false)
                 )
                 onConfirm(updatedAlarm)
             }

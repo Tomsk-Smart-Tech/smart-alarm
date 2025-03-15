@@ -8,19 +8,17 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.flow.first
 
 class SettingsFunctions {
-    lateinit var mqttService: MqttService
     lateinit var context: Context
     fun connectToDevice(context: Context) {
         this.context = context
-        mqttService = MqttService
-        mqttService.init(context)
     }
 
     suspend fun sendMessage(msg: String, topic: String): Boolean {
         return try {
-            mqttService.publish(topic, msg)
-            mqttService.subscribe(topic)
-            mqttService.connectionState.first { it }
+//            MqttService.connect()
+            MqttService.publish(topic, msg)
+            MqttService.subscribe(topic)
+            MqttService.connectionState.first { it }
         } catch (e: Exception) {
             Log.e("MQTT", "Ошибка подключения: ${e.message}")
             Toast.makeText(

@@ -85,6 +85,8 @@ fun HomeScreen() {
                     val sf = SettingsFunctions()
                     sf.connectToDevice(context)
                     isConnected = sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
+                    sf.sendMessage("Test", "mqtt/sensors")
+                    sf.sendMessage("Test", "mqtt/alarms")
                     if (isConnected) {
                         Toast.makeText(context,
                             context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
