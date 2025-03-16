@@ -27,4 +27,7 @@
     <string name="tab_about">Справка</string>
     <string name="about_device">Об устройстве</string>
     <string name="btn_stop_alarm">Остановить</string>
+    <string name="default_title">Без названия</string>
+    <string name="default_artist">Неизвестен</string>
+    <string name="title_playback_control">Воспроизведение</string>
 </resources>

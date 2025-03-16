@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,19 +44,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.startActivity
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import kotlinx.coroutines.launch
 import java.time.Instant
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavController? = null) {
     val context = LocalContext.current
     var events : String
     val coroutineScope = rememberCoroutineScope()
-    val httpController = HttpController(context)
     var isConnected by remember { mutableStateOf(false) }
+
+
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
@@ -94,6 +100,17 @@ fun HomeScreen() {
                 } catch (e: Exception) {
                     Toast.makeText(context,
                         context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG).show()
+                }
+            }
+        },
+        Setting("Управление воспроизведением") {
+            if (navController != null) {
+                navController.navigate("music_player_route") {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
             }
         },

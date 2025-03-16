@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import SingleAlarmManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -49,6 +52,7 @@ import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
+import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 import kotlinx.coroutines.launch
 
@@ -142,6 +146,7 @@ sealed class Screens(val route: String) {
     data object Home : Screens("home_route")
     data object Alarm : Screens("alarm_route")
     data object Music : Screens("music_route")
+    data object MusicPlayer : Screens("music_player_route")
 }
 
 data class BottomNavigationItem(
@@ -258,19 +263,26 @@ fun NavigationHost(
                 }
             },
             popEnterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(durationMillis = durationMillis)
-                )
+                when (initialState.destination.route) {
+                    Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
             },
             popExitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(durationMillis = durationMillis)
-                )
+                when (targetState.destination.route) {
+                    Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+                    else -> null
+                }
+
             }
         ) {
-            HomeScreen()
+            HomeScreen(navController)
         }
 
         composable(
@@ -383,6 +395,58 @@ fun NavigationHost(
             }
         ) {
             MusicScreen()
+        }
+
+        composable(
+            Screens.MusicPlayer.route,
+            enterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route -> slideInHorizontally(
+                        initialOffsetX = { it },
+
+//                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+
+                    else -> null
+                }
+            },
+            exitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route -> slideOutHorizontally(
+                        targetOffsetX = { it },
+//                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+
+                    else -> null
+                }
+            },
+            popEnterTransition = {
+                when (initialState.destination.route) {
+                    Screens.Home.route -> slideInHorizontally(
+                        initialOffsetX = { it },
+
+//                        AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+
+                    else -> null
+                }
+            },
+            popExitTransition = {
+                when (targetState.destination.route) {
+                    Screens.Home.route -> slideOutHorizontally(
+                        targetOffsetX = { it },
+//                        AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(durationMillis = durationMillis)
+                    )
+
+                    else -> null
+                }
+            }
+        ) {
+            PlaybackControlScreen({navController.popBackStack()})
         }
     }
 }

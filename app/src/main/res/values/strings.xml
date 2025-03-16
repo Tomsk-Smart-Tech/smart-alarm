@@ -26,4 +26,7 @@
     <string name="tab_about">Information</string>
     <string name="about_device">About device</string>
     <string name="btn_stop_alarm">Stop</string>
+    <string name="default_title">Untitled</string>
+    <string name="default_artist">Unnamed</string>
+    <string name="title_playback_control">Playback Control</string>
 </resources>
