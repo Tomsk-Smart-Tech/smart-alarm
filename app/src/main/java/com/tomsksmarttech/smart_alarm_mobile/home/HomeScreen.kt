@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,9 +22,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -34,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -43,23 +48,24 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import com.tomsksmarttech.smart_alarm_mobile.HttpController
-import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
+import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
-import java.time.Instant
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
     val context = LocalContext.current
-    var events : String
+    var events: String
     val coroutineScope = rememberCoroutineScope()
-    var isConnected by remember { mutableStateOf(false) }
+    var isConnected = MqttService.connectionState.collectAsState()
+
+    var temperature by remember { mutableStateOf(0.0) }
+    var humidity by remember { mutableStateOf(0.0) }
 
 
     val permission = android.Manifest.permission.READ_CALENDAR
@@ -70,9 +76,13 @@ fun HomeScreen(navController: NavController? = null) {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context))
-            Toast.makeText(context,
-                context.getString(R.string.notif_import_calendar), Toast.LENGTH_LONG).show()
+            events = CalendarEvents().convertCalendarEventsToJSON(
+                CalendarEvents().parseCalendarEvents(context)
+            )
+            Toast.makeText(
+                context,
+                context.getString(R.string.notif_import_calendar), Toast.LENGTH_LONG
+            ).show()
             Log.d("EVENTS", events)
             isPermissionGranted = true
         } else {
@@ -90,16 +100,21 @@ fun HomeScreen(navController: NavController? = null) {
                 try {
                     val sf = SettingsFunctions()
                     sf.connectToDevice(context)
-                    isConnected = sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
+                    sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
                     sf.sendMessage("Test", "mqtt/sensors")
                     sf.sendMessage("Test", "mqtt/alarms")
-                    if (isConnected) {
-                        Toast.makeText(context,
-                            context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
+                    if (isConnected.value) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.notif_device_connected_success),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(context,
-                        context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         },
@@ -114,70 +129,169 @@ fun HomeScreen(navController: NavController? = null) {
                 }
             }
         },
-        Setting(stringResource(R.string.tab_about)){
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2"))
+        Setting(stringResource(R.string.tab_about)) {
+            val browserIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2")
+            )
             startActivity(context, browserIntent, null)
         },
         Setting("Импортировать календарь") {
-            events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2025").time, SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time))
+
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
             coroutineScope.launch {
-                try {
-                    val sf = SettingsFunctions()
-                    sf.connectToDevice(context)
-                    isConnected = sf.sendMessage(events, "mqtt/events")
-                    if (isConnected) {
-                        Toast.makeText(context, context.getString(R.string.notif_device_connected_success), Toast.LENGTH_LONG).show()
+                if (isPermissionGranted) {
+                    events = CalendarEvents().convertCalendarEventsToJSON(
+                        CalendarEvents().parseCalendarEvents(
+                            context,
+                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2025").time,
+                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
+                        )
+                    )
+                    try {
+                        Log.d("EVENTS", events)
+                        val sf = SettingsFunctions()
+                        sf.connectToDevice(context)
+                        sf.sendMessage(events, "mqtt/events")
+                        if (isConnected.value) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.notif_device_connected_success),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                        Log.d("ALARM", "is connected: $isConnected")
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.notif_device_connected_failed),
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                    Log.d("ALARM", "is connected: $isConnected")
-                } catch (e: Exception) {
-                    Toast.makeText(context, context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG).show()
+                } else {
+                    launcher.launch(permission)
                 }
             }
-            Log.d("EVENTS", events)
-            if (isPermissionGranted) {
-                events = CalendarEvents().convertCalendarEventsToJSON(CalendarEvents().parseCalendarEvents(context, fromDate = Instant.now().toEpochMilli()))
-                Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
-                Log.d("EVENTS", events)
-            } else {
-                launcher.launch(permission)
-            }
+
         },
         Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
     )
 
-    Column (horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .height(20.dp))
-        LazyColumn (modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+        )
+        LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
             items(settingsList) { setting ->
                 if (setting.name == "Smart alarm") {
-                    Image(painter = painterResource(R.drawable.demo_1), contentDescription = "Our alarm")
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxSize().padding(20.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.demo_1),
+                            contentDescription = "Our alarm"
+                        )
+                        Spacer(modifier = Modifier
+                            .fillMaxHeight()
+                            .width(10.dp))
+                        Box(
+                            Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(30.dp)
+                                )
+                                .fillMaxWidth().wrapContentHeight().padding(horizontal = 0.dp, vertical = 20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_temperature),
+                                        contentDescription = "Temperature",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.scale(1.5f)
+                                    )
+                                    Text(
+                                        "${temperature}°C",
+                                        fontSize = 30.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(30.dp)
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_humidity),
+                                        contentDescription = "Humidity",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.scale(1.5f)
+                                    )
+                                    Text(
+                                        "${humidity}%",
+                                        fontSize = 30.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp)
+                    )
                     Row {
-                        Log.d("ALARM", "is connected: $isConnected")
-                        if (isConnected) {
-                            Icon(painterResource(R.drawable.ic_dot), contentDescription = "Connected", tint = Color.Green)
+                        Log.d("ALARM", "is connected: ${isConnected.value}")
+                        if (isConnected.value) {
+                            Icon(
+                                painterResource(R.drawable.ic_dot),
+                                contentDescription = "Connected",
+                                tint = Color.Green
+                            )
                             Spacer(
                                 Modifier
                                     .fillMaxHeight()
-                                    .width(10.dp))
+                                    .width(10.dp)
+                            )
                             Text(text = "Устройство подключено", fontWeight = FontWeight.Bold)
                         } else {
-                            Icon(painterResource(R.drawable.ic_dot), contentDescription = "Disconnected", tint = Color.Red)
+                            Icon(
+                                painterResource(R.drawable.ic_dot),
+                                contentDescription = "Disconnected",
+                                tint = Color.Red
+                            )
                             Spacer(
                                 Modifier
                                     .fillMaxHeight()
-                                    .width(10.dp))
+                                    .width(10.dp)
+                            )
                             Text(text = "Устройство не подключено", fontWeight = FontWeight.Bold)
                         }
                     }
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp))
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp)
+                    )
                 } else {
                     SettingCard(setting.name, setting.func)
                 }
@@ -188,7 +302,7 @@ fun HomeScreen(navController: NavController? = null) {
 
 
 @Composable
-fun SettingCard(setting: String, onClick: (context : Context) -> (Unit)) {
+fun SettingCard(setting: String, onClick: (context: Context) -> (Unit)) {
     val context = LocalContext.current
 //    val navController = rememberNavController()
     Box(
@@ -199,17 +313,23 @@ fun SettingCard(setting: String, onClick: (context : Context) -> (Unit)) {
             .height(50.dp),
         contentAlignment = Alignment.Center,
 
-    ) {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically) {
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(setting, fontWeight = FontWeight.Bold)
-            Icon(ImageVector.vectorResource(R.drawable.ic_arrow_right), contentDescription = "Show additional settings")
+            Icon(
+                ImageVector.vectorResource(R.drawable.ic_arrow_right),
+                contentDescription = "Show additional settings"
+            )
         }
     }
 }
+
 @Preview
 @Composable
 fun HomeScreenPreview() {

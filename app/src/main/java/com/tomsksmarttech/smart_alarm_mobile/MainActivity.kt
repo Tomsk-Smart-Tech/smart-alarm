@@ -30,6 +30,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -49,12 +50,10 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
-import com.tomsksmarttech.smart_alarm_mobile.home.SettingsFunctions
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import kotlinx.coroutines.launch
 
 const val durationMillis = 600
 
@@ -195,7 +194,7 @@ fun BottomNavigationBar(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = Color.Transparent) {
                 BottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = currentRoute == item.route,
@@ -221,6 +220,7 @@ fun BottomNavigationBar(
                         }
                     )
                 }
+
             }
         }
     ) { paddingValues ->
@@ -268,6 +268,7 @@ fun NavigationHost(
                         AnimatedContentTransitionScope.SlideDirection.Right,
                         animationSpec = tween(durationMillis = durationMillis)
                     )
+
                     else -> null
                 }
             },
@@ -277,6 +278,7 @@ fun NavigationHost(
                         AnimatedContentTransitionScope.SlideDirection.Left,
                         animationSpec = tween(durationMillis = durationMillis)
                     )
+
                     else -> null
                 }
 
@@ -446,7 +448,7 @@ fun NavigationHost(
                 }
             }
         ) {
-            PlaybackControlScreen({navController.popBackStack()})
+            PlaybackControlScreen({ navController.popBackStack() })
         }
     }
 }
