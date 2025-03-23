@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
+import SingleAlarmManager.getDefaultAlarmRingtoneUri
 import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
@@ -97,9 +98,12 @@ class HttpController(val context: Context) {
     private suspend fun saveAlarm(alarm: Alarm) {
         coroutineScope {
             launch(Dispatchers.IO) {
+                if (alarm.musicUri == null) alarm.musicUri =
+                    getDefaultAlarmRingtoneUri().toString();
+
                 sendAudio(
                     context,
-                    alarm.musicUri!!,
+                    alarm.musicUri.toString(),
                     context.getString(R.string.remote_host)
                 )
                 delay(500)

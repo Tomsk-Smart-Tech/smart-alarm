@@ -85,7 +85,8 @@ object SingleAlarmManager {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        systemAlarmManager?.setExact(
+        systemAlarmManager!!.set(
+//        systemAlarmManager?.setExact(
             SystemAlarmManager.RTC_WAKEUP,
             calendar.timeInMillis,
             pendingIntent
