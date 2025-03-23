@@ -54,6 +54,10 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import java.time.Duration
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+
 
 const val durationMillis = 600
 
@@ -80,7 +84,6 @@ class MainActivity : ComponentActivity() {
 
         MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
-
 
         val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
@@ -114,8 +117,19 @@ class MainActivity : ComponentActivity() {
             }
         }
         Log.d("PENDING", "pending alarms: $pendingAlarms")
-        alarms.value.sortBy { it?.time }
-        pendingAlarms.sortBy { it.time }
+        SharedData.sortAlarms()
+        pendingAlarms.sortBy{ alarm: Alarm ->
+            alarm.let {
+                val now = LocalTime.now()
+                val alarmTime = it.time
+                val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                val localTime = LocalTime.parse(alarmTime, formatter)
+                val duration = Duration.between(now, localTime)
+
+                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
+            }
+        }
+
         MqttService.initCoroutineScope(lifecycleScope)
         MqttService.sendList(pendingAlarms, this)
         SharedData.updateCurrAlarmIndex()

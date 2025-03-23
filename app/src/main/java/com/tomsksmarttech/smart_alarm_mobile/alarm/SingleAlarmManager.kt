@@ -30,7 +30,7 @@ object SingleAlarmManager {
             it!!.id == id
         }
         if (currAlarm == null) return
-        Log.d("ALARM", "HELP I WANT TO KILL MYSELF $id, ${currAlarm.getHours().toInt()}, ${currAlarm.getMinutes().toInt()} ")
+        Log.d("ALARM", "HELP I WANT TO MEOW MEOW MEOW $id, ${currAlarm.getHours().toInt()}, ${currAlarm.getMinutes().toInt()} ")
         if (systemAlarmManager == null) {
             throw IllegalStateException("AlarmManager is not initialized. Call AlarmManager.init(context) first.")
         }
@@ -70,7 +70,7 @@ object SingleAlarmManager {
 
         currAlarm.musicUri = SharedData.lastAudio?.uri.toString()
         val intent = Intent(appContext, AlarmReceiver::class.java).apply {
-            action = "com.tomsksmarttech.ALARM_ACTION"
+            action = "com.tomsksmarttech.ALARM_TRIGGERED"
             putExtra("alarm_id", id.toString())
             if (currAlarm.musicUri.toString() == "null") {
                 currAlarm.musicUri = getDefaultAlarmRingtoneUri().toString()

@@ -123,17 +123,7 @@ fun AlarmScreen(navController: NavHostController) {
             SharedData.alarms.update { alarms ->
                 alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
             }
-            alarms.value.sortBy { alarm ->
-                alarm?.let {
-                    val now = LocalTime.now()
-                    val alarmTime = it.time
-                    val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                    val localTime = LocalTime.parse(alarmTime, formatter)
-                    val duration = Duration.between(now, localTime)
-
-                    if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
-                }
-            }
+            SharedData.sortAlarms()
             MqttService.subscribe("mqtt/alarms")
 //            MqttService.publish("mqtt/alarms", a)
             MqttService.initCoroutineScope(coroutineScope)
@@ -148,6 +138,8 @@ fun AlarmScreen(navController: NavHostController) {
 //        },
         onAlarmRemove = { alarmId ->
             SharedData.alarms.update { alarms -> alarms.filter { it!!.id != alarmId }.toMutableList() }
+            MqttService.subscribe("mqtt/alarms")
+            MqttService.sendList(alarms.value, context)
         },
         navController = navController
     )
@@ -421,6 +413,7 @@ fun AlarmItem(
                         )
                     )
                     alarmManager.setAlarm(alarm.id)
+                    SharedData.sortAlarms()
                     SharedData.saveAlarms(httpController, coroutineScope)
                     isShowDialog = false
                 },
@@ -432,13 +425,20 @@ fun AlarmItem(
                 alarm.label = newAlarm.label
                 alarm.isSended = false
                 isLabelChanged = false
+                MqttService.subscribe("mqtt/alarms")
+                MqttService.sendList(alarms.value, context)
+                Log.d("SEND", "I WANT TO SEND ${alarms.value}")
             }, onDismiss = { isLabelChanged = false })
         }
         if (isDaysDialog) {
             AlarmDaysPickerDialog(alarm = alarm,
                 onConfirm = {
                     alarm.isSended = false
-                    isDaysDialog = false},
+                    isDaysDialog = false
+                    MqttService.subscribe("mqtt/alarms")
+                    MqttService.sendList(alarms.value, context)
+                    Log.d("SEND", "I WANT TO SEND ${alarms.value}")
+                            },
 
                 onDismiss = {isDaysDialog = false})
         }

@@ -53,6 +53,7 @@ import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
@@ -64,8 +65,8 @@ fun HomeScreen(navController: NavController? = null) {
     val coroutineScope = rememberCoroutineScope()
     var isConnected = MqttService.connectionState.collectAsState()
 
-    var temperature by remember { mutableStateOf(0.0) }
-    var humidity by remember { mutableStateOf(0.0) }
+    var temperature by remember { SharedData.temperature }
+    var humidity by remember { SharedData.humidity }
 
 
     val permission = android.Manifest.permission.READ_CALENDAR

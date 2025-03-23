@@ -14,9 +14,10 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttObserver
-import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
+import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.removeAlarm
+
 
 class AlarmService : Service(), MqttObserver {
 
@@ -36,13 +37,13 @@ class AlarmService : Service(), MqttObserver {
         startAlarm = msg != "connected"
     }
 
-    private fun showAlarmActivity() {
-        val intent = Intent(this, AlarmActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("is_haptic", SharedData.alarms.value.find { it!!.id == alarmId }?.isHaptic == true)
-        }
-        startActivity(intent)
-    }
+//    private fun showAlarmActivity() {
+//        val intent = Intent(this, AlarmActivity::class.java).apply {
+//            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+//            putExtra("is_haptic", SharedData.alarms.value.find { it!!.id == alarmId }?.isHaptic == true)
+//        }
+//        startActivity(intent)
+//    }
 
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
@@ -52,6 +53,9 @@ class AlarmService : Service(), MqttObserver {
                 val alarms = SharedData.loadAlarms(this)
                 Log.d("ALARM", "Loaded alarms: $alarms")
                 stopAlarm()
+//                SharedData.sortAlarms()
+                removeAlarm(alarms.first().id)
+                Log.d("ALARM", "Removed alarm: ${alarms.first().time}")
             }
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)
@@ -64,36 +68,13 @@ class AlarmService : Service(), MqttObserver {
                 }
                 if (isPhoneLocked == "true" && startAlarm) {
                     wakeScreen()
-                    showAlarmActivity()
                 }
 
                 val ringtoneUri = intent.getStringExtra("ringtone_uri")
                 if (!ringtoneUri.isNullOrEmpty()) {
                     playRingtone(ringtoneUri)
                 }
-
-                val notificationIntent = Intent(this, AlarmActivity::class.java).apply {
-                    flags
-                }
-                val pendingIntent = PendingIntent.getActivity(
-                    this,
-                    0,
-                    notificationIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // FLAG_IMMUTABLE для Android 12+
-                )
-                val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
-                    .setContentTitle(resources.getString(R.string.app_name))
-                    .setContentText("Будильник сработал")
-                    .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setCategory(NotificationCompat.CATEGORY_ALARM)
-                    .setAutoCancel(true)
-                    .setContentIntent(pendingIntent)
-//                    .addAction(R.drawable.ic_alarm, getString(R.string.btn_cancel),
-//                        );
-                    .build()
-
-                startForeground(1, notification)
+                notification(this)
                 wakeScreen()
             }
         }
@@ -107,6 +88,33 @@ class AlarmService : Service(), MqttObserver {
         mediaPlayer = null
         stopSelf()
 
+    }
+
+    fun notification(context: Context) {
+        val notificationIntent = Intent(context, AlarmReceiver::class.java).apply {
+            action = "com.tomsksmarttech.NOTIFICATION_CLICKED"
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+
+        val notification = NotificationCompat.Builder(this, "ALARM_CHANNEL")
+            .setContentTitle(resources.getString(R.string.app_name))
+            .setContentText("Будильник сработал")
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+//            .setContentIntent(pendingIntent)
+            .addAction(R.drawable.ic_alarm, getString(R.string.btn_cancel), pendingIntent)
+            .build()
+
+        startForeground(1, notification)
     }
 
     private fun createNotificationChannel(context: Context) {

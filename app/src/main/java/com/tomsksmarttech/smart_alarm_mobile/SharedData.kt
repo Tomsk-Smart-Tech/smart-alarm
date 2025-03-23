@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -15,6 +17,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 object SharedData {
 
@@ -26,15 +31,21 @@ object SharedData {
     val musicList: StateFlow<List<Audio>> = _musicList
 
     private val _currentAlarmId = MutableStateFlow(0)
+    var humidity = mutableDoubleStateOf(0.0)
+    var temperature = mutableDoubleStateOf(0.0)
     val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
+
+    //alarms functions
     var lastAudio: Audio? = null
     val alarms = MutableStateFlow(
         mutableListOf<Alarm?>()
 
     )
 
+
     fun saveAlarms(hc : HttpController, cs: CoroutineScope) {
+        sortAlarms()
         cs.launch{
             hc.saveAlarms()
         }
@@ -48,12 +59,28 @@ object SharedData {
         val updatedList = alarms.value.toMutableList()
         updatedList.add(newAlarm)
         alarms.value = updatedList
+        sortAlarms()
     }
 
     fun removeAlarm(id: Int) {
         val updatedList = alarms.value.toMutableList()
         updatedList.removeIf { it!!.id == id }
         alarms.value = updatedList
+        sortAlarms()
+    }
+
+    fun sortAlarms() {
+        alarms.value.sortBy { alarm ->
+            alarm?.let {
+                val now = LocalTime.now()
+                val alarmTime = it.time
+                val formatter = DateTimeFormatter.ofPattern("HH:mm")
+                val localTime = LocalTime.parse(alarmTime, formatter)
+                val duration = Duration.between(now, localTime)
+
+                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
+            }
+        }
     }
 
     var alreadyAddedAlarms = mutableListOf<Alarm>()
@@ -74,6 +101,8 @@ object SharedData {
         }
     }
 
+
+    //music functions
     fun startLoadMusicJob(context: Context) {
         val scope = CoroutineScope(Dispatchers.IO)
         _loadMusicJob.value = scope.launch {
@@ -131,6 +160,10 @@ object SharedData {
         }
     }
 
+
+
+
+    // shared preferences functions
     fun <T> saveListAsJson(context: Context, list: Collection<T>, key: String) {
         val gson = Gson()
         val sharedPreferences =
