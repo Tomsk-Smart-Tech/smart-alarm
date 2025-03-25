@@ -53,9 +53,11 @@ class AlarmService : Service(), MqttObserver {
                 val alarms = SharedData.loadAlarms(this)
                 Log.d("ALARM", "Loaded alarms: $alarms")
                 stopAlarm()
+                SharedData.alarms.value.last()?.isEnabled = false
+                Log.d("ALARM", "${SharedData.alarms.value.last()?.time} was set off")
 //                SharedData.sortAlarms()
-                removeAlarm(alarms.first().id)
-                Log.d("ALARM", "Removed alarm: ${alarms.first().time}")
+//                removeAlarm(alarms.first().id)
+//                Log.d("ALARM", "Removed alarm: ${alarms.first().time}")
             }
             else -> {
                 SharedData.saveAlarms(this, SharedData.alarms.value)

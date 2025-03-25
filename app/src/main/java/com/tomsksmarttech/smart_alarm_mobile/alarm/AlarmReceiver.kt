@@ -1,37 +1,55 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import android.app.KeyguardManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat.startForeground
 import androidx.core.content.ContextCompat
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
+
+const val ALARM_TRIGGERED = "com.tomsksmarttech.ALARM_TRIGGERED";
+const val NOTIFICATION_CLICKED = "com.tomsksmarttech.NOTIFICATION_CLICKED";
 
 class AlarmReceiver : BroadcastReceiver() {
-
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            "com.tomsksmarttech.ALARM_TRIGGERED" -> handleAlarmTrigger(context, intent)
-            "com.tomsksmarttech.NOTIFICATION_CLICKED" -> handleNotificationClick(context, intent)
+             ALARM_TRIGGERED -> handleAlarmTrigger(context, intent)
+            NOTIFICATION_CLICKED -> handleNotificationClick(context, intent)
             else -> Log.d("AlarmReceiver", "Неизвестный intent: ${intent.action}")
         }
     }
 
     private fun handleAlarmTrigger(context: Context, intent: Intent) {
-        val isPhoneLocked = (context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isDeviceLocked
-        val ringtoneUri = intent.getStringExtra("RINGTONE_URI") ?: ""
-        val alarm = intent.getStringExtra("alarm_id") ?: ""
-        Log.d("AlarmReceiver", "Будильник сработал: $ringtoneUri")
+        val mqttCheckService = MqttCheckService()
 
-        val serviceIntent = Intent(context, AlarmService::class.java).apply {
-            putExtra("ringtone_uri", ringtoneUri)
-            putExtra("alarm_id", alarm)
-            putExtra("is_phone_locked", isPhoneLocked.toString())
+        mqttCheckService.checkMqtt { isSuccess ->
+            // callback будет вызван когда:
+            // - пришло сообщение (isSuccess = true)
+            // - или прошло 10 секунд (isSuccess = false)
+
+            if (isSuccess) {
+                //если устройство ответило
+                Log.d("MQTT_CHECK", "Сообщение получено!")
+                SharedData.alarms.value.last()?.isEnabled = false
+                Log.d("ALARM", "${SharedData.alarms.value.last()?.time} was set off")
+                return@checkMqtt
+            } else {
+                //если устройство не ответило
+                Log.d("MQTT_CHECK", "Таймаут, сообщение не пришло")
+                val isPhoneLocked = (context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isDeviceLocked
+                val ringtoneUri = intent.getStringExtra("RINGTONE_URI") ?: ""
+                val alarm = intent.getStringExtra("alarm_id") ?: ""
+                Log.d("AlarmReceiver", "Будильник сработал: $ringtoneUri")
+
+                val serviceIntent = Intent(context, AlarmService::class.java).apply {
+                    putExtra("ringtone_uri", ringtoneUri)
+                    putExtra("alarm_id", alarm)
+                    putExtra("is_phone_locked", isPhoneLocked.toString())
+                }
+                ContextCompat.startForegroundService(context, serviceIntent)
+            }
         }
-        ContextCompat.startForegroundService(context, serviceIntent)
 
 
     }
