@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
+    implementation(libs.spotify.api.kotlin.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

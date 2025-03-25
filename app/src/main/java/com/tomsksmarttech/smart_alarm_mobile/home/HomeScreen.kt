@@ -188,78 +188,63 @@ fun HomeScreen(navController: NavController? = null) {
         LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
             items(settingsList) { setting ->
                 if (setting.name == "Smart alarm") {
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxSize().padding(20.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp)
                     ) {
                         Image(
-                            painter = painterResource(R.drawable.demo_1),
-                            contentDescription = "Our alarm"
+                            painter = painterResource(R.drawable.kumquat),
+                            contentDescription = "Our alarm",
+                            Modifier.padding(20.dp)
                         )
-                        Spacer(modifier = Modifier
-                            .fillMaxHeight()
-                            .width(10.dp))
+                        Spacer(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(10.dp)
+                        )
                         Box(
                             Modifier
                                 .background(
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                     shape = RoundedCornerShape(30.dp)
                                 )
-                                .fillMaxWidth().wrapContentHeight().padding(horizontal = 0.dp, vertical = 20.dp),
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .padding(horizontal = 0.dp, vertical = 20.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.fillMaxSize()
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_temperature),
-                                        contentDescription = "Temperature",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.scale(1.5f)
-                                    )
-                                    Text(
-                                        "${temperature}°C",
-                                        fontSize = 30.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Spacer(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(30.dp)
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_temperature),
+                                    contentDescription = "Temperature",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.scale(1.5f)
                                 )
-                                Row(
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_humidity),
-                                        contentDescription = "Humidity",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.scale(1.5f)
-                                    )
-                                    Text(
-                                        "${humidity}%",
-                                        fontSize = 30.sp,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                                Text(
+                                    "${temperature}°C",
+                                    fontSize = 30.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_humidity),
+                                    contentDescription = "Humidity",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.scale(1.5f)
+                                )
+                                Text(
+                                    "${humidity}%",
+                                    fontSize = 30.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(20.dp)
-                    )
                     Row {
                         Log.d("ALARM", "is connected: ${isConnected.value}")
                         if (isConnected.value) {
