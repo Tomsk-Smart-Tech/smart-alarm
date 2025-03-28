@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -54,18 +55,16 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-
 
 const val durationMillis = 600
 
 class MainActivity : ComponentActivity() {
 
     val ao = AlarmObserver(this)
-
-//    lateinit var mqttService: MqttService
 
     val targetRoute by lazy {
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
@@ -89,6 +88,25 @@ class MainActivity : ComponentActivity() {
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
             SharedData.startLoadMusicJob(applicationContext)
         }
+
+//        MqttService.subscribe(SENSORS_TOPIC)
+
+        // наблюдение за очередью сообщений
+        // появились сообщения - отправляю их по очереди
+        lifecycleScope.launch {
+            MqttService.deque.collect { deque ->
+                MqttService.initCoroutineScope(lifecycleScope)
+                MqttService.connect()
+                val dequeIter = deque.iterator()
+                while (dequeIter.hasNext()) {
+                    val currElem = deque.removeFirst()
+                    MqttService.subscribe(currElem.first)
+                    MqttService.send(currElem.first, currElem.second, this@MainActivity)
+                }
+            }
+        }
+
+        // из SharedPreferences
         loadAlarms()
 
         setContent {
@@ -99,39 +117,38 @@ class MainActivity : ComponentActivity() {
     }
 
     fun loadAlarms() {
-        MqttService.subscribe("mqtt/sensors")
 
-        var pendingAlarms = mutableListOf<Alarm>()
+//        var pendingAlarms = mutableListOf<Alarm>()
         val tmp = loadListFromFile(this, key = "alarm_data", Alarm::class.java)
         Log.d("ALARM", "temp data loaded: $tmp")
         tmp?.forEach { it: Alarm ->
             Log.d("ALARM", it.toString())
-            if (!SharedData.alarms.value.contains(it)) {
+            if (!alarms.value.contains(it)) {
                 SharedData.addAlarm(it)
             } else {
-                if (!it.isSended) {
-                    pendingAlarms.add(it)
-                }
-                Log.d("ALARM", "already have" + SharedData.alarms.value)
+//                if (!it.isSended) {
+//                    pendingAlarms.add(it)
+//                }
+                Log.d("ALARM", "already have" + alarms.value)
                 SharedData.alreadyAddedAlarms.add(it)
             }
         }
-        Log.d("PENDING", "pending alarms: $pendingAlarms")
-        SharedData.sortAlarms()
-        pendingAlarms.sortBy{ alarm: Alarm ->
-            alarm.let {
-                val now = LocalTime.now()
-                val alarmTime = it.time
-                val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                val localTime = LocalTime.parse(alarmTime, formatter)
-                val duration = Duration.between(now, localTime)
+//        Log.d("PENDING", "pending alarms: $pendingAlarms")
+//        SharedData.sortAlarms()
+//        pendingAlarms.sortBy{ alarm: Alarm ->
+//            alarm.let {
+//                val now = LocalTime.now()
+//                val alarmTime = it.time
+//                val formatter = DateTimeFormatter.ofPattern("HH:mm")
+//                val localTime = LocalTime.parse(alarmTime, formatter)
+//                val duration = Duration.between(now, localTime)
+//
+//                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
+//            }
+//        }
 
-                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
-            }
-        }
+//        MqttService.addList("mqtt/alarms", pendingAlarms.toList())
 
-        MqttService.initCoroutineScope(lifecycleScope)
-        MqttService.sendList(pendingAlarms, this)
         SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }
@@ -146,9 +163,14 @@ class MainActivity : ComponentActivity() {
         Worker(appContext, workerParams) {
 
         override fun doWork(): Result {
-            val alarms = SharedData.alarms.value
+            val alarms = alarms.value
             SharedData.saveAlarms(applicationContext, alarms)
             Log.d("ALARMS", "Будильники сохранены через WorkManager")
+//            repeat(SharedData.getMsgDequeLen()) {
+//                val mqttPair = SharedData.getMsg()
+//                MqttService.publish(mqttPair.first, mqttPair.second)
+//            }
+            Log.d("MQTT", "Отправлено сообщений через WorkManager")
             return Result.success()
         }
     }

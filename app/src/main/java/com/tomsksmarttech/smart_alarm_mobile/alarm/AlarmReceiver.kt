@@ -4,7 +4,10 @@ import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 
@@ -31,12 +34,19 @@ class AlarmReceiver : BroadcastReceiver() {
             if (isSuccess) {
                 //если устройство ответило
                 Log.d("MQTT_CHECK", "Сообщение получено!")
+
                 SharedData.alarms.value.last()?.isEnabled = false
                 Log.d("ALARM", "${SharedData.alarms.value.last()?.time} was set off")
                 return@checkMqtt
             } else {
                 //если устройство не ответило
-                Log.d("MQTT_CHECK", "Таймаут, сообщение не пришло")
+                val handler = Handler(Looper.getMainLooper());
+                handler.post(Runnable() {
+                    run { Toast.makeText(context,
+                        "Кумкват не ответил. Звоню сам.",
+                        Toast.LENGTH_SHORT).show();
+                        Log.d("MQTT_CHECK", "устройство не ответило")}
+                });
                 val isPhoneLocked = (context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isDeviceLocked
                 val ringtoneUri = intent.getStringExtra("RINGTONE_URI") ?: ""
                 val alarm = intent.getStringExtra("alarm_id") ?: ""

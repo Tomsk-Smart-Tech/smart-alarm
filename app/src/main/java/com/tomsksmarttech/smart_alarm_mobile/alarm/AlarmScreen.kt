@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import com.tomsksmarttech.smart_alarm_mobile.ALARMS_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.Screens
@@ -85,13 +86,12 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
-//import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttController
 import kotlinx.coroutines.flow.update
-import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import kotlin.text.first
+
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -102,8 +102,7 @@ fun AlarmScreen(navController: NavHostController) {
     val alarmsList by alarms.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
-//    val mqttController = MqttController(context, coroutineScope)
-//    mqttController.connect()
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -120,14 +119,12 @@ fun AlarmScreen(navController: NavHostController) {
         alarms = alarmsList,
         onAlarmChange = { updatedAlarm ->
             updatedAlarm.isSended = false
-            SharedData.alarms.update { alarms ->
+            alarms.update { alarms ->
                 alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
             }
             SharedData.sortAlarms()
-            MqttService.subscribe("mqtt/alarms")
-//            MqttService.publish("mqtt/alarms", a)
             MqttService.initCoroutineScope(coroutineScope)
-            MqttService.sendList(alarms.value, context)
+            MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
             Log.d("SEND","I WANT TO SEND ${alarms.value}")
         },
 //        onAlarmAdd = {
@@ -138,8 +135,7 @@ fun AlarmScreen(navController: NavHostController) {
 //        },
         onAlarmRemove = { alarmId ->
             SharedData.alarms.update { alarms -> alarms.filter { it!!.id != alarmId }.toMutableList() }
-            MqttService.subscribe("mqtt/alarms")
-            MqttService.sendList(alarms.value, context)
+            MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
         },
         navController = navController
     )
@@ -224,7 +220,7 @@ fun AlarmListScreen(
                 SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
 
                 showDialog = false
-                Log.d("SAVEALARM", "save alarm")
+                Log.d("ALARM", "save ringtones")
                 SharedData.saveAlarms(httpController, coroutineScope)
             },
             onDismiss = { showDialog = false }
@@ -291,6 +287,8 @@ fun AlarmItem(
                             isEnabled = isEnabled,
                             repeatDays = alarm.repeatDays ?: listOf(false, false, false, false, false, false, false)
                         )
+//                                MqttService.addList(TOPIC, alarms.value)
+
                     )
 
                     if (isEnabled) {
@@ -298,6 +296,7 @@ fun AlarmItem(
                     } else {
                         alarmManager.cancelAlarm(alarm.id)
                     }
+                    MqttService.addList(ALARMS_TOPIC, alarms.value)
                 }
             )
         }
@@ -379,6 +378,8 @@ fun AlarmItem(
                             SharedData.removeAlarm(alarm.id)
                             alarmManager.cancelAlarm(alarm.id)
                             Log.d("ALARM", "removed alarm")
+                            MqttService.addList(ALARMS_TOPIC, alarms.value)
+                            Log.d("HELP", MqttService.deque.value.toString())
                         })
                         .padding(6.dp),
                 ) {
@@ -389,7 +390,7 @@ fun AlarmItem(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Удалить будильник", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.btn_delete_alarm), fontWeight = FontWeight.Bold)
                         Icon(
                             ImageVector.vectorResource(R.drawable.ic_delete),
                             contentDescription = "Delete alarm"
@@ -425,8 +426,7 @@ fun AlarmItem(
                 alarm.label = newAlarm.label
                 alarm.isSended = false
                 isLabelChanged = false
-                MqttService.subscribe("mqtt/alarms")
-                MqttService.sendList(alarms.value, context)
+                MqttService.addList(ALARMS_TOPIC, alarms.value)
                 Log.d("SEND", "I WANT TO SEND ${alarms.value}")
             }, onDismiss = { isLabelChanged = false })
         }
@@ -435,8 +435,7 @@ fun AlarmItem(
                 onConfirm = {
                     alarm.isSended = false
                     isDaysDialog = false
-                    MqttService.subscribe("mqtt/alarms")
-                    MqttService.sendList(alarms.value, context)
+                    MqttService.addList(ALARMS_TOPIC, alarms.value)
                     Log.d("SEND", "I WANT TO SEND ${alarms.value}")
                             },
 
@@ -582,8 +581,10 @@ fun AlarmDaysPickerDialog(
                             .fillMaxWidth()
                             .wrapContentHeight()
                             .padding(16.dp),
+                        horizontalArrangement = Arrangement.Absolute.Center
                     ) {
-                        Column {
+                        Column (horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()) {
                             MultiChoiceSegmentedButtonRow {
                                 days.forEachIndexed { index, label ->
                                     SegmentedButton(
@@ -667,6 +668,7 @@ fun DialClockDialog(
                 Log.d("ALARM", "$newAlarm : ")
                 addAlarm(newAlarm)
                 onConfirm(newAlarm)
+                MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
                 updateCurrAlarmIndex()
             }
         ) {

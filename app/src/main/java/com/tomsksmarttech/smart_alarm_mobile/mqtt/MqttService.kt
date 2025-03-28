@@ -12,6 +12,7 @@ import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.properties.Delegates
 import kotlin.text.Charsets.UTF_8
@@ -25,11 +26,12 @@ object MqttService {
     private var cs: CoroutineScope? = null
     private var port by Delegates.notNull<Int>()
 
-    private var topic: String = ""
     private var isConnected = false
     private val observers = mutableListOf<MqttObserver>()
     private val subscribedTopics = mutableSetOf<String>()
     val connectionState = MutableStateFlow(false)
+    private val _msgDeque = MutableStateFlow(ArrayDeque<Pair<String, String>>())
+    val deque = _msgDeque.asStateFlow()
 
     fun init(context: Context) {
         address = context.getString(R.string.broker_url)
@@ -73,29 +75,36 @@ object MqttService {
             }
     }
 
-    fun publish(topic: String, message: String) {
-        this.topic = topic
+    private fun publish(topic: String, message: String) {
+//        subscribe(topic)
         if (!isConnected) {
             Log.e("MqttService", "Попытка отправить сообщение без подключения!")
+            connect()
             return
         }
-
-        client.publishWith()
-            .topic(topic)
-            .qos(MqttQos.AT_LEAST_ONCE)
-            .payload(message.toByteArray())
-            .send()
-            .whenComplete { _, throwable ->
-                if (throwable != null) {
-                    Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
-                } else {
-                    Log.i("MqttService", "Сообщение отправлено в $topic: $message")
+        Log.i("MqttService", "Вызвван метод publish")
+        try {
+            //todo разобраться почему не отправляется сообщение
+            client.publishWith()
+                .topic(topic)
+                .qos(MqttQos.AT_LEAST_ONCE)
+                .payload(message.toByteArray())
+                .send()
+                .whenComplete { _, throwable ->
+                    Log.e("MqttService", "When complete")
+                    if (throwable != null) {
+                        Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
+                    } else {
+                        Log.i("MqttService", "Сообщение отправлено в $topic: $message")
+                    }
                 }
-            }
+        } catch (e: Exception) {
+            Log.e("ERROR", e.message.toString())
+        }
+        Log.i("MqttSerivce", "publish выполнил работу")
     }
 
     fun subscribe(topic: String) {
-        this.topic = topic
         if (!isConnected) {
             Log.e("MqttService", "Попытка подписки без подключения!")
             return
@@ -112,8 +121,7 @@ object MqttService {
             .qos(MqttQos.AT_LEAST_ONCE)
             .callback { publishMessage ->
                 val receivedMsg = String(publishMessage.payloadAsBytes, UTF_8)
-                Log.i("MqttService", "Получено сообщение из $topic: $receivedMsg") // теперь получаем сообщения из различных топиков
-
+                Log.i("MqttService", "Получено сообщение из $topic: $receivedMsg")
                 observers.forEach { it.onNotify(topic, receivedMsg) }
             }
             .send()
@@ -121,35 +129,48 @@ object MqttService {
                 if (throwable != null) {
                     Log.e("MqttService", "Ошибка подписки: ${throwable.message}")
                 } else {
-                    subscribedTopics.add(topic) // добавление в список топиков
+                    subscribedTopics.add(topic) // Теперь подписки не затираются
                     Log.i("MqttService", "Подписались на топик: $topic")
                 }
             }
     }
 
+
     fun initCoroutineScope(cs: CoroutineScope) {
         this.cs = cs
     }
 
-    fun sendList(list: List<Alarm?>, context: Context) {
-        val gson = Gson()
-        val jsonString = gson.toJson(list)
-        Log.d("ALARMS", "Preparing to sending $jsonString $list")
-        if (jsonString != "[]") {
-            cs?.launch {
-                runCatching {
-                    publish(topic, jsonString)
-                    subscribe(topic)
-                    Log.d("ALARMS", "Content sent: $jsonString")
-                    launch{
-                        SharedData.alarms.value.forEach { it?.isSended = true }
-                        Log.d("MQTT", "alarms sended, param changed")
-                    }
-                }.onFailure { error ->
-                    Log.e("ALARMS", "Failed to send message: ${error.localizedMessage}", error)
-                    SharedData.saveAlarms(context, SharedData.alarms.value)
-                }
+    fun send(topic:String, msg: String, context: Context) {
+        cs?.launch {
+            runCatching {
+                subscribe(topic)
+                publish(topic, msg)
+                Log.d("ALARMS", "Content sent: $msg")
+//                launch{
+//                    SharedData.alarms.value.forEach { it?.isSended = true }
+//                    Log.d("MQTT", "alarms sended, param changed")
+//                }
+            }.onFailure { error ->
+                Log.e("ALARMS", "Failed to send message: ${error.localizedMessage}", error)
+                SharedData.saveAlarms(context, SharedData.alarms.value)
             }
         }
+    }
+
+
+    fun addMsg(topic: String, msg: String) {
+        val newDeque = ArrayDeque(_msgDeque.value).apply {
+            addFirst(topic to msg)
+        }
+        _msgDeque.value = newDeque
+        Log.d("MQTT", "Deque updated (size=${newDeque.size})")
+    }
+
+    fun <T> addList(topic: String, list: List<T>) {
+        val newDeque = ArrayDeque(_msgDeque.value).apply {
+            addFirst(Pair(topic, Gson().toJson(list)))
+        }
+        _msgDeque.value = newDeque
+        Log.d("MQTT", "Deque updated (size=${newDeque.size})")
     }
 }

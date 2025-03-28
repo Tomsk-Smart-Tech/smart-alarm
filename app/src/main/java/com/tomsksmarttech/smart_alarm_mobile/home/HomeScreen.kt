@@ -52,11 +52,16 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.tomsksmarttech.smart_alarm_mobile.EVENTS_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SENSORS_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.TEST_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
@@ -99,11 +104,16 @@ fun HomeScreen(navController: NavController? = null) {
         Setting("Подключение к устройству") {
             coroutineScope.launch {
                 try {
-                    val sf = SettingsFunctions()
-                    sf.connectToDevice(context)
-                    sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
-                    sf.sendMessage("Test", "mqtt/sensors")
-                    sf.sendMessage("Test", "mqtt/alarms")
+//                    val sf = SettingsFunctions()
+//                    sf.connectToDevice(context)
+//                    sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
+//                    sf.sendMessage("Test", "mqtt/sensors")
+//                    sf.sendMessage("Test", "mqtt/alarms")
+                    MqttService.connect()
+                    Log.d("EVENTS", "connected in sf")
+                    MqttService.subscribe(SENSORS_TOPIC)
+                    MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
+//                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
                     if (isConnected.value) {
                         Toast.makeText(
                             context,
@@ -139,21 +149,25 @@ fun HomeScreen(navController: NavController? = null) {
         },
         Setting("Импортировать календарь") {
 
+            val currentDateString = SimpleDateFormat("dd-MM-yyyy").format(Date())
+            val currentDateParsed = SimpleDateFormat("dd-MM-yyyy").parse(currentDateString)
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
             coroutineScope.launch {
                 if (isPermissionGranted) {
                     events = CalendarEvents().convertCalendarEventsToJSON(
                         CalendarEvents().parseCalendarEvents(
                             context,
-                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2025").time,
+                            currentDateParsed.time,
                             SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
                         )
                     )
                     try {
                         Log.d("EVENTS", events)
-                        val sf = SettingsFunctions()
-                        sf.connectToDevice(context)
-                        sf.sendMessage(events, "mqtt/events")
+//                        val sf = SettingsFunctions()
+//                        sf.connectToDevice(context)
+//                        sf.sendMessage(events, "mqtt/events")
+                        MqttService.addMsg(EVENTS_TOPIC, events)
+                        Log.d("EVENTS", "added message, deque is: ${MqttService.connectionState.value}")
                         if (isConnected.value) {
                             Toast.makeText(
                                 context,

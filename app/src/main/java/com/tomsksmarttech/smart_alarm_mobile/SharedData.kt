@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -20,6 +19,13 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+
+const val SENSORS_TOPIC = "mqtt/sensors"
+const val TEST_TOPIC = "mqtt/test"
+const val EVENTS_TOPIC = "mqtt/events"
+const val ALARMS_TOPIC = "mqtt/alarms"
+const val CHECK_TOPIC = "mqtt/check"
+
 
 object SharedData {
 
@@ -93,15 +99,14 @@ object SharedData {
     var currentAlarmIndex = alarms.value.size
 
     fun updateCurrAlarmIndex() {
-        if (alarms.value.isEmpty()) {return;}
-        else {
+        if (alarms.value.isEmpty()) {
+            return;
+        } else {
             alarms.value.forEach {
                 if (it!!.id > currentAlarmIndex) currentAlarmIndex = it.id
             }
         }
     }
-
-
     //music functions
     fun startLoadMusicJob(context: Context) {
         val scope = CoroutineScope(Dispatchers.IO)

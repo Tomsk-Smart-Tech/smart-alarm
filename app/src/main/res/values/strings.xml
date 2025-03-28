@@ -29,4 +29,5 @@
     <string name="default_title">Untitled</string>
     <string name="default_artist">Unnamed</string>
     <string name="title_playback_control">Playback Control</string>
+    <string name="btn_delete_alarm">Удалить будильник</string>
 </resources>
