@@ -1,7 +1,9 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import SingleAlarmManager
+import android.app.ComponentCaller
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -33,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.lifecycleScope
@@ -54,7 +57,13 @@ import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
+import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalTime
@@ -113,6 +122,14 @@ class MainActivity : ComponentActivity() {
             SmartalarmmobileTheme {
                 BottomNavigationBar(targetRoute)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
+        super.onNewIntent(intent)
+        SpotifyPkceLogin().getAuthorizationCode(this, intent)
+        lifecycleScope.launch {
+            SpotifyPkceLogin().sendAuthorizationCode()
         }
     }
 

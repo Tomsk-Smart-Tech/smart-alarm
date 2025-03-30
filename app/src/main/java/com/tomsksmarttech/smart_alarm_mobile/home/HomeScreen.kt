@@ -1,9 +1,9 @@
 package com.tomsksmarttech.smart_alarm_mobile.home
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.icu.text.SimpleDateFormat
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -61,7 +61,8 @@ import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
 import java.util.Date
-import java.util.Locale
+import androidx.core.net.toUri
+import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
@@ -72,6 +73,8 @@ fun HomeScreen(navController: NavController? = null) {
 
     var temperature by remember { SharedData.temperature }
     var humidity by remember { SharedData.humidity }
+    val activity = LocalContext.current as? Activity
+    var voc by remember { SharedData.voc }
 
 
     val permission = android.Manifest.permission.READ_CALENDAR
@@ -140,10 +143,18 @@ fun HomeScreen(navController: NavController? = null) {
                 }
             }
         },
+        Setting("Подключение Spotify") {
+
+            activity?.let {
+                coroutineScope.launch {
+                    SpotifyPkceLogin().getAccessToken(it)
+                }
+            } ?: Log.e("SpotifyAuth", "Activity is null!")
+        },
         Setting(stringResource(R.string.tab_about)) {
             val browserIntent = Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2")
+                "https://alice.yandex.ru/support/ru/station/index-gen2".toUri()
             )
             startActivity(context, browserIntent, null)
         },
@@ -205,7 +216,8 @@ fun HomeScreen(navController: NavController? = null) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp)
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
                             painter = painterResource(R.drawable.kumquat),
@@ -237,11 +249,11 @@ fun HomeScreen(navController: NavController? = null) {
                                     painter = painterResource(R.drawable.ic_temperature),
                                     contentDescription = "Temperature",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.scale(1.5f)
+                                    modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
                                     "${temperature}°C",
-                                    fontSize = 30.sp,
+                                    fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(Modifier.width(10.dp))
@@ -249,11 +261,23 @@ fun HomeScreen(navController: NavController? = null) {
                                     painter = painterResource(R.drawable.ic_humidity),
                                     contentDescription = "Humidity",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.scale(1.5f)
+                                    modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
                                     "${humidity}%",
-                                    fontSize = 30.sp,
+                                    fontSize = 27.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_air),
+                                    contentDescription = "CO2",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.scale(1.4f)
+                                )
+                                Text(
+                                    "${voc}",
+                                    fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }

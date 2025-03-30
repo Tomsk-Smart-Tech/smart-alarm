@@ -39,6 +39,7 @@ object SharedData {
     private val _currentAlarmId = MutableStateFlow(0)
     var humidity = mutableDoubleStateOf(0.0)
     var temperature = mutableDoubleStateOf(0.0)
+    var voc = mutableDoubleStateOf(0.0)
     val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
 
@@ -48,6 +49,9 @@ object SharedData {
         mutableListOf<Alarm?>()
 
     )
+
+    var currentAuthorizationCode : String? = null
+    lateinit var codeVerifier : String
 
 
     fun saveAlarms(hc : HttpController, cs: CoroutineScope) {
