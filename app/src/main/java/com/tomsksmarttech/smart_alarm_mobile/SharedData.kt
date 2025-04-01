@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,7 +27,7 @@ const val EVENTS_TOPIC = "mqtt/events"
 const val ALARMS_TOPIC = "mqtt/alarms"
 const val CHECK_TOPIC = "mqtt/check"
 
-
+    // todo избавиться от SharedData
 object SharedData {
 
     private val _loadMusicJob = MutableStateFlow<Job?>(null)
@@ -36,77 +37,15 @@ object SharedData {
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
 
-    private val _currentAlarmId = MutableStateFlow(0)
     var humidity = mutableDoubleStateOf(0.0)
     var temperature = mutableDoubleStateOf(0.0)
-    val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
-
-    //alarms functions
     var lastAudio: Audio? = null
-    val alarms = MutableStateFlow(
-        mutableListOf<Alarm?>()
+        //        val alarms = MutableStateFlow(
+//        mutableListOf<Alarm?>()
+//
+//        )
 
-    )
-
-
-    fun saveAlarms(hc : HttpController, cs: CoroutineScope) {
-        sortAlarms()
-        cs.launch{
-            hc.saveAlarms()
-        }
-    }
-
-    fun setAlarmId(id: Int) {
-        _currentAlarmId.value = id
-    }
-
-    fun addAlarm(newAlarm: Alarm) {
-        val updatedList = alarms.value.toMutableList()
-        updatedList.add(newAlarm)
-        alarms.value = updatedList
-        sortAlarms()
-    }
-
-    fun removeAlarm(id: Int) {
-        val updatedList = alarms.value.toMutableList()
-        updatedList.removeIf { it!!.id == id }
-        alarms.value = updatedList
-        sortAlarms()
-    }
-
-    fun sortAlarms() {
-        alarms.value.sortBy { alarm ->
-            alarm?.let {
-                val now = LocalTime.now()
-                val alarmTime = it.time
-                val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                val localTime = LocalTime.parse(alarmTime, formatter)
-                val duration = Duration.between(now, localTime)
-
-                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
-            }
-        }
-    }
-
-    var alreadyAddedAlarms = mutableListOf<Alarm>()
-
-    fun updateAlarms() {
-        val updatedList = alarms.value.toMutableList()
-        alarms.value = updatedList
-    }
-
-    var currentAlarmIndex = alarms.value.size
-
-    fun updateCurrAlarmIndex() {
-        if (alarms.value.isEmpty()) {
-            return;
-        } else {
-            alarms.value.forEach {
-                if (it!!.id > currentAlarmIndex) currentAlarmIndex = it.id
-            }
-        }
-    }
     //music functions
     fun startLoadMusicJob(context: Context) {
         val scope = CoroutineScope(Dispatchers.IO)
@@ -205,7 +144,7 @@ object SharedData {
         return gson.fromJson(jsonString, type)
     }
 
-    fun saveAlarms(context: Context, alarms: MutableList<Alarm?>) {
+    fun saveAlarms(context: Context, alarms: Collection<Alarm>) {
         val gson = Gson()
         val sharedPreferences =
             context.getSharedPreferences("shared preferences", Context.MODE_PRIVATE)

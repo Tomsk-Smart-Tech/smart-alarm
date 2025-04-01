@@ -65,8 +65,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 
 import com.tomsksmarttech.smart_alarm_mobile.alarm.DialClockDialog
 
@@ -212,7 +212,7 @@ fun MusicLibrary(
     var showDialog by remember {
         mutableStateOf(false)
     }
-    val currentAlarmId by SharedData.currentAlarmId.collectAsState()
+    val currentAlarmId by AlarmRepository.currentAlarmId.collectAsState()
     mediaPlayer.setOnCompletionListener {
         isPlaying = false
     }
@@ -336,24 +336,25 @@ fun MusicLibrary(
                     }
                 }
             }
-            SharedData.lastAudio = audio
+            lastAudio = audio
         }
     }
     if (showDialog && currentAlarmId == 0) {
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                Log.d("ALARM", "Creating new with id from music ${SharedData.alarms.value.last()}")
-                Log.d("ALARM", "and list is music ${SharedData.alarms.value}")
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
-                SharedData.saveAlarms(httpController, coroutineScope)
+                Log.d("ALARM", "Creating new with id from music ${AlarmRepository.alarms.value.last()}")
+                Log.d("ALARM", "and list is music ${AlarmRepository.alarms.value}")
+                SingleAlarmManager.setAlarm(AlarmRepository.alarms.value.last().id)
+                AlarmRepository.saveAlarms(httpController, coroutineScope)
                 showDialog = false
             },
             onDismiss = {
                 showDialog = false
-            }
+            },
+            viewModel
         )
-        val alarmsState by alarms.collectAsState()
+        val alarmsState by AlarmRepository.alarms.collectAsState()
         val lastAlarm = alarmsState.lastOrNull()
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
     } else

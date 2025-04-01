@@ -9,7 +9,7 @@ import com.hivemq.client.mqtt.datatypes.MqttQos
 import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,13 +23,13 @@ object MqttService {
     private lateinit var address: String
     private lateinit var username: String
     private lateinit var password: String
-    private var cs: CoroutineScope? = null
     private var port by Delegates.notNull<Int>()
 
     private var isConnected = false
     private val observers = mutableListOf<MqttObserver>()
-    private val subscribedTopics = mutableSetOf<String>()
+    val subscribedTopics = mutableSetOf<String>()
     val connectionState = MutableStateFlow(false)
+    private var cs: CoroutineScope? = null
     private val _msgDeque = MutableStateFlow(ArrayDeque<Pair<String, String>>())
     val deque = _msgDeque.asStateFlow()
 
@@ -146,13 +146,9 @@ object MqttService {
                 subscribe(topic)
                 publish(topic, msg)
                 Log.d("ALARMS", "Content sent: $msg")
-//                launch{
-//                    SharedData.alarms.value.forEach { it?.isSended = true }
-//                    Log.d("MQTT", "alarms sended, param changed")
-//                }
             }.onFailure { error ->
                 Log.e("ALARMS", "Failed to send message: ${error.localizedMessage}", error)
-                SharedData.saveAlarms(context, SharedData.alarms.value)
+                SharedData.saveAlarms(context, AlarmRepository.alarms.value)
             }
         }
     }
@@ -173,4 +169,10 @@ object MqttService {
         _msgDeque.value = newDeque
         Log.d("MQTT", "Deque updated (size=${newDeque.size})")
     }
+
+    fun updateDeque(newDeque: ArrayDeque<Pair<String, String>>) {
+        _msgDeque.value = newDeque
+    }
+
+
 }

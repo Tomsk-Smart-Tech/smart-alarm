@@ -16,7 +16,6 @@ import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttObserver
 import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.removeAlarm
 
 
 class AlarmService : Service(), MqttObserver {
@@ -53,14 +52,14 @@ class AlarmService : Service(), MqttObserver {
                 val alarms = SharedData.loadAlarms(this)
                 Log.d("ALARM", "Loaded alarms: $alarms")
                 stopAlarm()
-                SharedData.alarms.value.last()?.isEnabled = false
-                Log.d("ALARM", "${SharedData.alarms.value.last()?.time} was set off")
+                AlarmRepository.alarms.value.last().isEnabled = false
+                Log.d("ALARM", "${AlarmRepository.alarms.value.last().time} was set off")
 //                SharedData.sortAlarms()
 //                removeAlarm(alarms.first().id)
 //                Log.d("ALARM", "Removed alarm: ${alarms.first().time}")
             }
             else -> {
-                SharedData.saveAlarms(this, SharedData.alarms.value)
+                SharedData.saveAlarms(this, AlarmRepository.alarms.value)
                 val isPhoneLocked = intent.getStringExtra("is_phone_locked")
                 Log.d("ID", alarmId.toString())
                 alarmId = try {

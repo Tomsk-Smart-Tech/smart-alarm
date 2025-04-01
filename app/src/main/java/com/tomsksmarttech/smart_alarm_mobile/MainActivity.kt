@@ -1,11 +1,11 @@
 package com.tomsksmarttech.smart_alarm_mobile
 
 import SingleAlarmManager
+import android.Manifest
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -45,28 +47,25 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadListFromFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
-import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmViewModel
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 import kotlinx.coroutines.launch
-import java.time.Duration
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 const val durationMillis = 600
-
+lateinit var viewModel: AlarmViewModel
 class MainActivity : ComponentActivity() {
 
     val ao = AlarmObserver(this)
 
     val targetRoute by lazy {
+
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
             ?: Screens.Home.route
     }
@@ -84,55 +83,44 @@ class MainActivity : ComponentActivity() {
         MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
 
-        val audioPermission = android.Manifest.permission.READ_MEDIA_AUDIO
+        val audioPermission = Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {
             SharedData.startLoadMusicJob(applicationContext)
         }
 
-//        MqttService.subscribe(SENSORS_TOPIC)
-
-        // наблюдение за очередью сообщений
-        // появились сообщения - отправляю их по очереди
+        MqttService.initCoroutineScope(lifecycleScope)
         lifecycleScope.launch {
-            MqttService.deque.collect { deque ->
-                MqttService.initCoroutineScope(lifecycleScope)
-                MqttService.connect()
-                val dequeIter = deque.iterator()
-                while (dequeIter.hasNext()) {
-                    val currElem = deque.removeFirst()
-                    MqttService.subscribe(currElem.first)
-                    MqttService.send(currElem.first, currElem.second, this@MainActivity)
+            MqttService.connect()
+            MqttService.deque.collect { deque ->  // COLLECT ОБРАБАТЫВАЕТ ВСЕ ЭЛЕМЕНТЫ
+                while (deque.isNotEmpty()) {
+                    val currElem = deque.removeFirstOrNull() ?: continue
+                    launch {
+                        if (!MqttService.subscribedTopics.contains(currElem.first)) {
+                            MqttService.subscribe(currElem.first)
+                        }
+                        MqttService.send(currElem.first, currElem.second, this@MainActivity)
+                    }
+                    MqttService.updateDeque(deque)
                 }
             }
         }
 
-        // из SharedPreferences
-        loadAlarms()
+
+        val alarmRepo: AlarmRepository = AlarmRepository
+        val viewModelHolder = ViewModelHolder(this)
+        viewModel = viewModelHolder.get("AlarmViewModel") {
+            AlarmViewModel(application, alarmRepo)
+        }
+        val httpController = HttpController(this)
+        viewModel.initHttpController(httpController)
 
         setContent {
             SmartalarmmobileTheme {
                 BottomNavigationBar(targetRoute)
             }
         }
-    }
 
-    fun loadAlarms() {
 
-//        var pendingAlarms = mutableListOf<Alarm>()
-        val tmp = loadListFromFile(this, key = "alarm_data", Alarm::class.java)
-        Log.d("ALARM", "temp data loaded: $tmp")
-        tmp?.forEach { it: Alarm ->
-            Log.d("ALARM", it.toString())
-            if (!alarms.value.contains(it)) {
-                SharedData.addAlarm(it)
-            } else {
-//                if (!it.isSended) {
-//                    pendingAlarms.add(it)
-//                }
-                Log.d("ALARM", "already have" + alarms.value)
-                SharedData.alreadyAddedAlarms.add(it)
-            }
-        }
 //        Log.d("PENDING", "pending alarms: $pendingAlarms")
 //        SharedData.sortAlarms()
 //        pendingAlarms.sortBy{ alarm: Alarm ->
@@ -148,8 +136,6 @@ class MainActivity : ComponentActivity() {
 //        }
 
 //        MqttService.addList("mqtt/alarms", pendingAlarms.toList())
-
-        SharedData.updateCurrAlarmIndex()
         SingleAlarmManager.init(this)
     }
 
@@ -163,20 +149,28 @@ class MainActivity : ComponentActivity() {
         Worker(appContext, workerParams) {
 
         override fun doWork(): Result {
-            val alarms = alarms.value
+            val alarms = AlarmRepository.alarms.value
             SharedData.saveAlarms(applicationContext, alarms)
             Log.d("ALARMS", "Будильники сохранены через WorkManager")
 //            repeat(SharedData.getMsgDequeLen()) {
 //                val mqttPair = SharedData.getMsg()
 //                MqttService.publish(mqttPair.first, mqttPair.second)
 //            }
-            Log.d("MQTT", "Отправлено сообщений через WorkManager")
+//            Log.d("MQTT", "Отправлено сообщений через WorkManager")
             return Result.success()
         }
     }
 
 }
 
+class ViewModelHolder(owner: ViewModelStoreOwner) {
+    private val store = owner.viewModelStore
+    private val viewModels = mutableMapOf<String, ViewModel>()
+
+    fun <T : ViewModel> get(key: String, creator: () -> T): T {
+        return viewModels.getOrPut(key) { creator() } as T
+    }
+}
 sealed class Screens(val route: String) {
     data object Home : Screens("home_route")
     data object Alarm : Screens("alarm_route")
@@ -244,7 +238,8 @@ fun BottomNavigationBar(
                         },
                         onClick = {
                             if (currentRoute != item.route) {
-                                SharedData.setAlarmId(0)
+                                //todo разобраться что происхрдит
+//                                AlarmRepository.setAlarmId(0)
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -386,7 +381,7 @@ fun NavigationHost(
                 }
             }
         ) {
-            AlarmScreen(navController)
+            AlarmScreen(navController, viewModel)
         }
 
         composable(

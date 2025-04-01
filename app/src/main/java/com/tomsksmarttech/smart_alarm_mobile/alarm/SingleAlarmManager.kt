@@ -4,13 +4,13 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.util.Log
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import java.util.Calendar
 import android.media.RingtoneManager
 import android.net.Uri
 import android.widget.Toast
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import java.util.Date
 
 
@@ -26,7 +26,7 @@ object SingleAlarmManager {
     }
 
     fun setAlarm(id: Int) {
-        val currAlarm = alarms.value.find { it: Alarm? ->
+        val currAlarm = AlarmRepository.alarms.value.find { it: Alarm? ->
             it!!.id == id
         }
         if (currAlarm == null) return

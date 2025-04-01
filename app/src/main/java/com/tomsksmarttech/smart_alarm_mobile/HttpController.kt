@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.saveListAsJson
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -109,11 +110,11 @@ class HttpController(val context: Context) {
                 delay(500)
             }
         }
-        if (!SharedData.alarms.value.isEmpty()) {
-            Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
+        if (!AlarmRepository.alarms.value.isEmpty()) {
+            Log.d("ALARM", "saving" + AlarmRepository.alarms.value.toList().toString())
             saveListAsJson(
                 context = context,
-                SharedData.alarms.value.toList(),
+                AlarmRepository.alarms.value.toList(),
                 key = "alarm_data",
             )
         }
@@ -121,22 +122,24 @@ class HttpController(val context: Context) {
 
     suspend fun saveAlarms() {
         coroutineScope {
-            Log.d("ALARM", "before filter" + SharedData.alarms.value.toList().toString())
+            Log.d("ALARM", "before filter" + AlarmRepository.alarms.value.toList().toString())
 
-            SharedData.alarms.value.removeAll { it: Alarm? ->
-                SharedData.alreadyAddedAlarms.contains(it)
+            val newList = AlarmRepository.alarms.value.toMutableList()
+            newList.removeAll { it: Alarm? ->
+                AlarmRepository.alreadyAddedAlarms.contains(it)
             }
+            AlarmRepository.updateAlarms(newList)
 
             launch(Dispatchers.IO) {
-                for (alarm in SharedData.alarms.value) {
-                    saveAlarm(alarm?: continue)
+                for (alarm in AlarmRepository.alarms.value) {
+                    saveAlarm(alarm)
                 }
             }
-            if (!SharedData.alarms.value.isEmpty()) {
-                Log.d("ALARM", "saving" + SharedData.alarms.value.toList().toString())
+            if (!AlarmRepository.alarms.value.isEmpty()) {
+                Log.d("ALARM", "saving" + AlarmRepository.alarms.value.toList().toString())
                 saveListAsJson(
                     context = context,
-                    SharedData.alarms.value.toList(),
+                    AlarmRepository.alarms.value.toList(),
                     key = "alarm_data"
                 )
             }

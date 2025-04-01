@@ -4,7 +4,6 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import com.tomsksmarttech.smart_alarm_mobile.CHECK_TOPIC
 
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttObserver

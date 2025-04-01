@@ -1,10 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
-import android.net.Uri
 import android.util.Log
-import androidx.core.content.ContentProviderCompat.requireContext
-import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
 
 data class Alarm(
     val id: Int,
@@ -19,9 +15,9 @@ data class Alarm(
 ) {
     fun getHours(): String {
         try {
-        return time.substring(0, endIndex = 2)
+            return time.substring(0, endIndex = 2)
         } catch (e: Exception) {
-            Log.e("ERROR", "er $time : ${alarms.value}")
+            Log.e("ERROR", "er $time : ${AlarmRepository.alarms.value}")
             return ""
         }
     }

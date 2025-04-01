@@ -1,6 +1,5 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
-import SingleAlarmManager
 import android.os.Build
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -76,82 +75,55 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import com.tomsksmarttech.smart_alarm_mobile.ALARMS_TOPIC
-import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.Screens
-import com.tomsksmarttech.smart_alarm_mobile.SharedData
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.addAlarm
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.alarms
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.currentAlarmIndex
-import com.tomsksmarttech.smart_alarm_mobile.SharedData.updateCurrAlarmIndex
-import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
-import kotlinx.coroutines.flow.update
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import kotlin.text.first
 
 
+// todo переделать с использованием ViewModel
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun AlarmScreen(navController: NavHostController) {
+fun AlarmScreen(navController: NavHostController, viewModel: AlarmViewModel) {
+    val permission = android.Manifest.permission.POST_NOTIFICATIONS
     val context = LocalContext.current
     var isPermissionGranted by remember { mutableStateOf(false) }
-    val permission = android.Manifest.permission.POST_NOTIFICATIONS
-    val alarmsList by alarms.collectAsState()
-
-    val coroutineScope = rememberCoroutineScope()
-
+    val alarmsList by viewModel.alarms.collectAsState()
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         isPermissionGranted = isGranted
     }
-
     LaunchedEffect(Unit) {
         if (context.checkSelfPermission(permission) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             launcher.launch(permission)
         }
     }
-
     AlarmListScreen(
         alarms = alarmsList,
-        onAlarmChange = { updatedAlarm ->
-            updatedAlarm.isSended = false
-            alarms.update { alarms ->
-                alarms.map { if (it!!.id == updatedAlarm.id) updatedAlarm else it }.toMutableList()
-            }
-            SharedData.sortAlarms()
-            MqttService.initCoroutineScope(coroutineScope)
-            MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
-            Log.d("SEND","I WANT TO SEND ${alarms.value}")
+        onAlarmChange = { changedAlarm ->
+            viewModel.onAlarmChange(changedAlarm)
         },
-//        onAlarmAdd = {
-//            newAlarm ->
-//
-//            SharedData.alarms.update { alarms ->
-//                (alarms + newAlarm).toMutableList() }
-//        },
         onAlarmRemove = { alarmId ->
-            SharedData.alarms.update { alarms -> alarms.filter { it!!.id != alarmId }.toMutableList() }
-            MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
+            viewModel.onAlarmRemove(alarmId)
         },
-        navController = navController
+        navController = navController,
+        viewModel = viewModel
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(
-    alarms: MutableList<Alarm?>,
+    alarms: List<Alarm>,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: AlarmViewModel,
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val httpController = HttpController(context)
     var showDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
@@ -197,15 +169,15 @@ fun AlarmListScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             items(alarms,
-                key = { alarm -> alarm?.id ?: 0 }
+                key = { alarm -> alarm.id}
             ) { alarm ->
                 if (!alarms.isEmpty()) {
                     AlarmItem(
-                        alarm = alarm!!,
+                        alarm = alarm,
                         onAlarmChange = onAlarmChange,
                         onAlarmRemove = onAlarmRemove,
-                        alarmManager = SingleAlarmManager,
-                        navController = navController
+                        navController = navController,
+                        viewModel = viewModel,
                     )
                 }
             }
@@ -215,15 +187,12 @@ fun AlarmListScreen(
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                Log.d("ALARM", "Creating new with id ${SharedData.alarms.value.last()}")
-                Log.d("ALARM", "and list is  ${SharedData.alarms.value}")
-                SingleAlarmManager.setAlarm(SharedData.alarms.value.last()!!.id)
-
+                viewModel.addAlarm(timePickerState)
+                Log.d("ALARM", "and list is  ${viewModel.alarms.value}")
                 showDialog = false
-                Log.d("ALARM", "save ringtones")
-                SharedData.saveAlarms(httpController, coroutineScope)
             },
-            onDismiss = { showDialog = false }
+            onDismiss = { showDialog = false },
+            viewModel = viewModel,
         )
     }
 }
@@ -233,13 +202,9 @@ fun AlarmItem(
     alarm: Alarm,
     onAlarmChange: (Alarm) -> Unit,
     onAlarmRemove: (Int) -> Unit,
-    alarmManager: SingleAlarmManager,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: AlarmViewModel
 ) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val httpController = HttpController(context)
-
     val haptic = LocalHapticFeedback.current
     var isEnabled by remember { mutableStateOf(alarm.isEnabled) }
     var isShowDialog by remember { mutableStateOf(false) }
@@ -282,21 +247,12 @@ fun AlarmItem(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     isEnabled = it
                     Log.d("ALARM", "$alarm")
-                    onAlarmChange(
-                        alarm.copy(
-                            isEnabled = isEnabled,
-                            repeatDays = alarm.repeatDays ?: listOf(false, false, false, false, false, false, false)
-                        )
-//                                MqttService.addList(TOPIC, alarms.value)
-
-                    )
-
+                    onAlarmChange
                     if (isEnabled) {
-                        alarmManager.setAlarm(alarm.id)
+                        viewModel.setAlarm(alarm.id)
                     } else {
-                        alarmManager.cancelAlarm(alarm.id)
+                        viewModel.cancelAlarm(alarm.id)
                     }
-                    MqttService.addList(ALARMS_TOPIC, alarms.value)
                 }
             )
         }
@@ -306,7 +262,8 @@ fun AlarmItem(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            SharedData.setAlarmId(alarm.id)
+                            //todo ???
+                            viewModel.setAlarmId(alarm.id)
                             navController.navigate(Screens.Music.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
@@ -375,11 +332,10 @@ fun AlarmItem(
                         .fillMaxWidth()
                         .clickable(onClick = {
                             onAlarmRemove(alarm.id)
-                            SharedData.removeAlarm(alarm.id)
-                            alarmManager.cancelAlarm(alarm.id)
+                            // todo вроде вызван onAlarmRemove и отправка должна произойти сама
+//                            viewModel.removeAlarm(alarm.id)
+                            viewModel.cancelAlarm(alarm.id)
                             Log.d("ALARM", "removed alarm")
-                            MqttService.addList(ALARMS_TOPIC, alarms.value)
-                            Log.d("HELP", MqttService.deque.value.toString())
                         })
                         .padding(6.dp),
                 ) {
@@ -413,12 +369,13 @@ fun AlarmItem(
                             isSended = false,
                         )
                     )
-                    alarmManager.setAlarm(alarm.id)
-                    SharedData.sortAlarms()
-                    SharedData.saveAlarms(httpController, coroutineScope)
+//                    viewModel.setAlarm(alarm.id)
+//                    viewModel.sortAlarms()
+//                    viewModel.saveAlarms(httpController, coroutineScope)
                     isShowDialog = false
                 },
-                onDismiss = { isShowDialog = false }
+                onDismiss = { isShowDialog = false },
+                viewModel
             )
         }
         if (isLabelChanged) {
@@ -426,8 +383,9 @@ fun AlarmItem(
                 alarm.label = newAlarm.label
                 alarm.isSended = false
                 isLabelChanged = false
-                MqttService.addList(ALARMS_TOPIC, alarms.value)
-                Log.d("SEND", "I WANT TO SEND ${alarms.value}")
+                // всё равно должен вызвать
+//                MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
+                Log.d("SEND", "I WANT TO SEND ${viewModel.alarms.value}")
             }, onDismiss = { isLabelChanged = false })
         }
         if (isDaysDialog) {
@@ -435,8 +393,8 @@ fun AlarmItem(
                 onConfirm = {
                     alarm.isSended = false
                     isDaysDialog = false
-                    MqttService.addList(ALARMS_TOPIC, alarms.value)
-                    Log.d("SEND", "I WANT TO SEND ${alarms.value}")
+//                    MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
+                    Log.d("SEND", "I WANT TO SEND ${viewModel.alarms.value}")
                             },
 
                 onDismiss = {isDaysDialog = false})
@@ -641,8 +599,10 @@ fun DialClockDialog(
     alarm: Alarm?,
     onConfirm: (Alarm) -> Unit,
     onDismiss: () -> Unit,
+    viewModel: AlarmViewModel,
 ) {
     if (alarm == null) {
+        viewModel.updateCurrAlarmIndex()
         Log.d("test", "creating new alarm")
         val currentTime = Calendar.getInstance()
         val initialLabel = stringResource(R.string.new_alarm)
@@ -657,7 +617,7 @@ fun DialClockDialog(
             onConfirm = {
                 val time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
                 val newAlarm = Alarm(
-                    id = generateNewAlarmId(),
+                    id = viewModel.generateNewAlarmId(),
                     time = time,
                     isEnabled = true,
                     label = initialLabel,
@@ -666,10 +626,8 @@ fun DialClockDialog(
 
                 )
                 Log.d("ALARM", "$newAlarm : ")
-                addAlarm(newAlarm)
                 onConfirm(newAlarm)
-                MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
-                updateCurrAlarmIndex()
+                viewModel.updateCurrAlarmIndex()
             }
         ) {
             TimePicker(
@@ -721,11 +679,6 @@ fun TimePickerDialog(
         },
         text = { content() }
     )
-}
-
-fun generateNewAlarmId(): Int {
-    Log.d("ALARM", "new index: $currentAlarmIndex : ${SharedData.alarms.value}")
-    return currentAlarmIndex + 1
 }
 
 @Composable

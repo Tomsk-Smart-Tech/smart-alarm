@@ -167,7 +167,7 @@ fun HomeScreen(navController: NavController? = null) {
 //                        sf.connectToDevice(context)
 //                        sf.sendMessage(events, "mqtt/events")
                         MqttService.addMsg(EVENTS_TOPIC, events)
-                        Log.d("EVENTS", "added message, deque is: ${MqttService.connectionState.value}")
+                        Log.d("EVENTS", "added message, deque is: ${MqttService.deque.value}")
                         if (isConnected.value) {
                             Toast.makeText(
                                 context,

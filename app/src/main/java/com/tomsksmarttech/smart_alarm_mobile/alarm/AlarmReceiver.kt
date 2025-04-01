@@ -35,8 +35,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 //если устройство ответило
                 Log.d("MQTT_CHECK", "Сообщение получено!")
 
-                SharedData.alarms.value.last()?.isEnabled = false
-                Log.d("ALARM", "${SharedData.alarms.value.last()?.time} was set off")
+                AlarmRepository.alarms.value.last().isEnabled = false
+                Log.d("ALARM", "${AlarmRepository.alarms.value.last().time} was set off")
                 return@checkMqtt
             } else {
                 //если устройство не ответило
