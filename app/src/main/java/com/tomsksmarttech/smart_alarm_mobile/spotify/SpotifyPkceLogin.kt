@@ -13,6 +13,7 @@ import com.adamratzman.spotify.getSpotifyPkceCodeChallenge
 import com.tomsksmarttech.smart_alarm_mobile.R
 import androidx.core.net.toUri
 import com.adamratzman.spotify.spotifyClientPkceApi
+import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 
@@ -65,20 +66,25 @@ class SpotifyPkceLogin {
     }
 
     fun sendAuthorizationCode() {
-        MqttService.addMsg("SpotifyAuth", SharedData.currentAuthorizationCode.toString())
+        val gson = Gson()
+        val json = gson.toJson(mapOf(Pair("code_verifier", SharedData.codeVerifier), Pair("authorization_code", SharedData.currentAuthorizationCode)))
+        MqttService.addMsg("mqtt/spotifyAuth", json)
+        Log.d("SpotifyAuth", "Authorization code sent")
+
     }
 
     suspend fun getCurrentTrackInfo(context: Context) {
         val code = SharedData.currentAuthorizationCode
-        if (code == null) {
-            Log.e("SpotifyAuth", "Authorization code is null")
+        val codeVerifier = SharedData.codeVerifier
+        if (code == null || codeVerifier == null) {
+            Log.e("mqtt/spotifyAuth", "Authorization code is null")
             return
         }
         val api = spotifyClientPkceApi(
             context.getString(R.string.client_id),
             context.getString(R.string.redirect_uri),
             code,
-            SharedData.codeVerifier
+            codeVerifier
         ) {
             retryWhenRateLimited = false
         }.build()

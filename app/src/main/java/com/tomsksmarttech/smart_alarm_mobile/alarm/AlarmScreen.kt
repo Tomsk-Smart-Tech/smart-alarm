@@ -75,8 +75,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import com.tomsksmarttech.smart_alarm_mobile.MainActivity.Screens
 import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.Screens
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar

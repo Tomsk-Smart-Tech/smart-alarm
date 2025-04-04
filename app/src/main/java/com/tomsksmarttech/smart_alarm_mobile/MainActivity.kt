@@ -35,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.ViewModel
@@ -60,16 +59,14 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 
 const val durationMillis = 600
 lateinit var viewModel: AlarmViewModel
+
 class MainActivity : ComponentActivity() {
+
+    private lateinit var spotifyPkceLogin: SpotifyPkceLogin
 
     val ao = AlarmObserver(this)
 
@@ -77,6 +74,57 @@ class MainActivity : ComponentActivity() {
 
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
             ?: Screens.Home.route
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Log.d("SpotifyAuth", "onNewIntent called")
+        intent?.let {
+            if (it.action == Intent.ACTION_VIEW && it.data != null) {
+                val redirectUri = getString(R.string.redirect_uri)
+                if (it.data.toString().startsWith(redirectUri)) {
+                    Log.d("SpotifyAuth", "Handling Spotify redirect URI: ${it.dataString}")
+                    spotifyPkceLogin.getAuthorizationCode(this, it)
+                    spotifyPkceLogin.sendAuthorizationCode()
+                    MqttService.addMsg("mqtt/spotifyAuth", it.data.toString())
+                } else {
+                    Log.d("SpotifyAuth", "Ignoring non-Spotify Intent in onNewIntent: ${it.dataString}")
+                }
+            } else {
+                Log.d("SpotifyAuth", "Intent is null or not ACTION_VIEW in onNewIntent")
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        handleIntentIfNeeded(intent)
+    }
+
+    private fun handleIntentIfNeeded(intent: Intent?) {
+        intent?.let {
+            // Проверяем, что Intent пришел от Spotify редиректа и еще не обработан
+            // (Можно добавить флаг в SharedPreferences или в сам Intent, чтобы избежать повторной обработки)
+            if (it.action == Intent.ACTION_VIEW && it.data != null) {
+                val redirectUri = getString(R.string.redirect_uri)
+                if (it.data.toString().startsWith(redirectUri)) {
+                    Log.d("SpotifyAuth", "Handling Spotify redirect URI from initial Intent: ${it.dataString}")
+                    spotifyPkceLogin.getAuthorizationCode(this, it)
+                    spotifyPkceLogin.sendAuthorizationCode()
+                    MqttService.addMsg("mqtt/spotifyAuth", it.data.toString())
+                    // Очищаем data из интента, чтобы не обработать повторно при повороте экрана и т.д.
+                    // Важно: Это может помешать другим обработчикам этого интента, если они есть.
+                    // Альтернатива - использовать флаг.
+                    setIntent(Intent(this, MainActivity::class.java)) // Заменяем интент на "чистый"
+                }
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
+        WorkManager.getInstance(this).enqueue(saveWorkRequest)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -88,6 +136,7 @@ class MainActivity : ComponentActivity() {
         MqttService.init(this)
 
         MqttService.connect()
+        spotifyPkceLogin = SpotifyPkceLogin()
 
         MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
@@ -129,15 +178,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
-        super.onNewIntent(intent)
-        SpotifyPkceLogin().getAuthorizationCode(this, intent)
-        lifecycleScope.launch {
-            SpotifyPkceLogin().sendAuthorizationCode()
-        }
-    }
 
-    fun loadAlarms() {
+
+        fun loadAlarms() {
 
 //        Log.d("PENDING", "pending alarms: $pendingAlarms")
 //        SharedData.sortAlarms()
@@ -154,13 +197,10 @@ class MainActivity : ComponentActivity() {
 //        }
 
 //        MqttService.addList("mqtt/alarms", pendingAlarms.toList())
-        SingleAlarmManager.init(this)
-    }
+            SingleAlarmManager.init(this)
+        }
 
-    override fun onStop() {
-        super.onStop()
-        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
-        WorkManager.getInstance(this).enqueue(saveWorkRequest)
+
     }
 
     class SaveAlarmsWorker(appContext: Context, workerParams: WorkerParameters) :
@@ -179,331 +219,332 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-}
 
-class ViewModelHolder(owner: ViewModelStoreOwner) {
-    private val store = owner.viewModelStore
-    private val viewModels = mutableMapOf<String, ViewModel>()
+    class ViewModelHolder(owner: ViewModelStoreOwner) {
+        private val store = owner.viewModelStore
+        private val viewModels = mutableMapOf<String, ViewModel>()
 
-    fun <T : ViewModel> get(key: String, creator: () -> T): T {
-        return viewModels.getOrPut(key) { creator() } as T
+        fun <T : ViewModel> get(key: String, creator: () -> T): T {
+            return viewModels.getOrPut(key) { creator() } as T
+        }
     }
-}
-sealed class Screens(val route: String) {
-    data object Home : Screens("home_route")
-    data object Alarm : Screens("alarm_route")
-    data object Music : Screens("music_route")
-    data object MusicPlayer : Screens("music_player_route")
-}
 
-data class BottomNavigationItem(
-    val label: String = "",
-    val icon: ImageVector = Icons.Filled.Home,
-    val route: String = ""
-) {
-    @Composable
-    fun bottomNavigationItems(): List<BottomNavigationItem> {
-        return listOf(
-            BottomNavigationItem(
-                label = stringResource(R.string.home),
-                icon = Icons.Filled.Home,
-                route = Screens.Home.route
-            ),
-            BottomNavigationItem(
-                label = stringResource(R.string.alarm),
-                icon = ImageVector.vectorResource(R.drawable.ic_alarm),
-                route = Screens.Alarm.route
-            ),
-            BottomNavigationItem(
-                label = stringResource(R.string.music),
-                icon = ImageVector.vectorResource(R.drawable.ic_music),
-                route = Screens.Music.route
+    sealed class Screens(val route: String) {
+        data object Home : Screens("home_route")
+        data object Alarm : Screens("alarm_route")
+        data object Music : Screens("music_route")
+        data object MusicPlayer : Screens("music_player_route")
+    }
+
+    data class BottomNavigationItem(
+        val label: String = "",
+        val icon: ImageVector = Icons.Filled.Home,
+        val route: String = ""
+    ) {
+        @Composable
+        fun bottomNavigationItems(): List<BottomNavigationItem> {
+            return listOf(
+                BottomNavigationItem(
+                    label = stringResource(R.string.home),
+                    icon = Icons.Filled.Home,
+                    route = Screens.Home.route
+                ),
+                BottomNavigationItem(
+                    label = stringResource(R.string.alarm),
+                    icon = ImageVector.vectorResource(R.drawable.ic_alarm),
+                    route = Screens.Alarm.route
+                ),
+                BottomNavigationItem(
+                    label = stringResource(R.string.music),
+                    icon = ImageVector.vectorResource(R.drawable.ic_music),
+                    route = Screens.Music.route
+                )
             )
-        )
-    }
-}
-
-
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@Composable
-fun BottomNavigationBar(
-    route: String,
-) {
-    var navigationSelectedItem by remember {
-        mutableIntStateOf(0)
+        }
     }
 
-    val navController = rememberNavController()
 
-    val currentRoute = navController.currentBackStackEntryFlow
-        .collectAsState(initial = navController.currentBackStackEntry)
-        .value?.destination?.route
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @Composable
+    fun BottomNavigationBar(
+        route: String,
+    ) {
+        var navigationSelectedItem by remember {
+            mutableIntStateOf(0)
+        }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            NavigationBar(containerColor = Color.Transparent) {
-                BottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        selected = currentRoute == item.route,
-                        label = {
-                            Text(item.label)
-                        },
-                        icon = {
-                            Icon(
-                                item.icon, contentDescription = item.label
-                            )
-                        },
-                        onClick = {
-                            if (currentRoute != item.route) {
-                                //todo разобраться что происхрдит
+        val navController = rememberNavController()
+
+        val currentRoute = navController.currentBackStackEntryFlow
+            .collectAsState(initial = navController.currentBackStackEntry)
+            .value?.destination?.route
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = {
+                NavigationBar(containerColor = Color.Transparent) {
+                    BottomNavigationItem().bottomNavigationItems().forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            selected = currentRoute == item.route,
+                            label = {
+                                Text(item.label)
+                            },
+                            icon = {
+                                Icon(
+                                    item.icon, contentDescription = item.label
+                                )
+                            },
+                            onClick = {
+                                if (currentRoute != item.route) {
+                                    //todo разобраться что происхрдит
 //                                AlarmRepository.setAlarmId(0)
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
+
                 }
-
             }
+        ) { paddingValues ->
+            NavigationHost(navController, paddingValues, route)
         }
-    ) { paddingValues ->
-        NavigationHost(navController, paddingValues, route)
     }
-}
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@Composable
-fun NavigationHost(
-    navController: NavHostController,
-    paddingValues: PaddingValues,
-    defaultRoute: String
-) {
-    NavHost(
-        navController = navController,
-        startDestination = defaultRoute,
-        modifier = Modifier.padding(paddingValues = paddingValues),
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @Composable
+    fun NavigationHost(
+        navController: NavHostController,
+        paddingValues: PaddingValues,
+        defaultRoute: String
     ) {
-        composable(
-            Screens.Home.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popExitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-
-            }
+        NavHost(
+            navController = navController,
+            startDestination = defaultRoute,
+            modifier = Modifier.padding(paddingValues = paddingValues),
         ) {
-            HomeScreen(navController)
-        }
+            composable(
+                Screens.Home.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-        composable(
-            Screens.Alarm.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    Screens.Music.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                        else -> null
+                    }
+                },
+                popEnterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Alarm.route, Screens.Music.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
+                        else -> null
+                    }
+                },
+                popExitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Alarm.route, Screens.Music.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+
                 }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    Screens.Music.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    Screens.Music.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popExitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    Screens.Music.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
+            ) {
+                HomeScreen(navController)
             }
-        ) {
-            AlarmScreen(navController, viewModel)
-        }
 
-        composable(
-            Screens.Music.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+            composable(
+                Screens.Alarm.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
+                        Screens.Music.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        Screens.Music.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                popEnterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        Screens.Music.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                popExitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        Screens.Music.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
                 }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
-            },
-            popExitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
-
-                    else -> null
-                }
+            ) {
+                AlarmScreen(navController, viewModel)
             }
-        ) {
-            MusicScreen()
-        }
 
-        composable(
-            Screens.MusicPlayer.route,
-            enterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route -> slideInHorizontally(
-                        initialOffsetX = { it },
+            composable(
+                Screens.Music.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                popEnterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route, Screens.Alarm.route -> slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                },
+                popExitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route, Screens.Alarm.route -> slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
+
+                        else -> null
+                    }
+                }
+            ) {
+                MusicScreen()
+            }
+
+            composable(
+                Screens.MusicPlayer.route,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route -> slideInHorizontally(
+                            initialOffsetX = { it },
 
 //                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
-                }
-            },
-            exitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route -> slideOutHorizontally(
-                        targetOffsetX = { it },
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route -> slideOutHorizontally(
+                            targetOffsetX = { it },
 //                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
-                }
-            },
-            popEnterTransition = {
-                when (initialState.destination.route) {
-                    Screens.Home.route -> slideInHorizontally(
-                        initialOffsetX = { it },
+                        else -> null
+                    }
+                },
+                popEnterTransition = {
+                    when (initialState.destination.route) {
+                        Screens.Home.route -> slideInHorizontally(
+                            initialOffsetX = { it },
 
 //                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
-                }
-            },
-            popExitTransition = {
-                when (targetState.destination.route) {
-                    Screens.Home.route -> slideOutHorizontally(
-                        targetOffsetX = { it },
+                        else -> null
+                    }
+                },
+                popExitTransition = {
+                    when (targetState.destination.route) {
+                        Screens.Home.route -> slideOutHorizontally(
+                            targetOffsetX = { it },
 //                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        animationSpec = tween(durationMillis = durationMillis)
-                    )
+                            animationSpec = tween(durationMillis = durationMillis)
+                        )
 
-                    else -> null
+                        else -> null
+                    }
                 }
+            ) {
+                PlaybackControlScreen({ navController.popBackStack() })
             }
-        ) {
-            PlaybackControlScreen({ navController.popBackStack() })
         }
     }
-}
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-@Composable
-fun BottomNavigationBarPreview(route: String) {
-    BottomNavigationBar(route)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    @Composable
+    fun BottomNavigationBarPreview(route: String) {
+        BottomNavigationBar(route)
+    }
 }

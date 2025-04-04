@@ -133,15 +133,18 @@ fun HomeScreen(navController: NavController? = null) {
             }
         },
         Setting("Управление воспроизведением") {
-            if (navController != null) {
-                navController.navigate("music_player_route") {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
-                }
+            coroutineScope.launch {
+                SpotifyPkceLogin().getCurrentTrackInfo(context)
             }
+//            if (navController != null) {
+//                navController.navigate("music_player_route") {
+//                    popUpTo(navController.graph.findStartDestination().id) {
+//                        saveState = true
+//                    }
+//                    launchSingleTop = true
+//                    restoreState = true
+//                }
+//            }
         },
         Setting("Подключение Spotify") {
 
