@@ -28,6 +28,7 @@ const val ALARMS_TOPIC = "mqtt/alarms"
 const val CHECK_TOPIC = "mqtt/check"
 
     // todo избавиться от SharedData
+
 object SharedData {
 
     private val _loadMusicJob = MutableStateFlow<Job?>(null)
@@ -39,6 +40,7 @@ object SharedData {
 
     var humidity = mutableDoubleStateOf(0.0)
     var temperature = mutableDoubleStateOf(0.0)
+    var voc = mutableDoubleStateOf(0.0)
 
     var lastAudio: Audio? = null
         //        val alarms = MutableStateFlow(

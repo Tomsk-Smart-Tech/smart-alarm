@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         MqttService.init(this)
+//        SingleAlarmManager.init(this)
 
         MqttService.connect()
 

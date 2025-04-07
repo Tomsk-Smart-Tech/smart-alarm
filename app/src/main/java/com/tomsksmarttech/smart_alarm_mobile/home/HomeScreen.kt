@@ -158,7 +158,7 @@ fun HomeScreen(navController: NavController? = null) {
                         CalendarEvents().parseCalendarEvents(
                             context,
                             currentDateParsed.time,
-                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
+//                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
                         )
                     )
                     try {

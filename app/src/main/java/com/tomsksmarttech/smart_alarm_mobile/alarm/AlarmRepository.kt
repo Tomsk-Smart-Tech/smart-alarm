@@ -27,6 +27,7 @@ object AlarmRepository {
         _alarms.value = newList
         sortAlarms()
         MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
+
     }
     fun loadAlarms(context: Context) {
 
@@ -77,15 +78,7 @@ object AlarmRepository {
 
     fun sortAlarms() {
         _alarms.value.sortBy { alarm ->
-            alarm.let {
-                val now = LocalTime.now()
-                val alarmTime = it.time
-                val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                val localTime = LocalTime.parse(alarmTime, formatter)
-                val duration = Duration.between(now, localTime)
-
-                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
-            }
+            alarm.time
         }
     }
 

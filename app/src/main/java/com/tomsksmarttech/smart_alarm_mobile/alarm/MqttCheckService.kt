@@ -25,6 +25,7 @@ class MqttCheckService : Service(), MqttObserver {
             MqttService.init(this)
         }
         MqttService.subscribe(CHECK_TOPIC)
+        MqttService.addObserver(this)
         isMsgReceived = false
 
         MqttService.addMsg(CHECK_TOPIC, "[{Shall_I_play_alarm?}]")

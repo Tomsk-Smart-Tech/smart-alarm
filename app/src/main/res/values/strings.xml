@@ -30,4 +30,15 @@
     <string name="default_artist">Unnamed</string>
     <string name="title_playback_control">Playback Control</string>
     <string name="btn_delete_alarm">Remove Alarm</string>
+    <plurals name="hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="few">%d hour</item>
+        <item quantity="many">%d hours</item>
+    </plurals>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="few">%d minute</item>
+        <item quantity="many">%d minutes</item>
+    </plurals>
 </resources>

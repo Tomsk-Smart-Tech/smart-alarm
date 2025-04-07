@@ -82,16 +82,13 @@ object MqttService {
             connect()
             return
         }
-        Log.i("MqttService", "Вызвван метод publish")
         try {
-            //todo разобраться почему не отправляется сообщение
             client.publishWith()
                 .topic(topic)
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .payload(message.toByteArray())
                 .send()
                 .whenComplete { _, throwable ->
-                    Log.e("MqttService", "When complete")
                     if (throwable != null) {
                         Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
                     } else {
@@ -101,7 +98,6 @@ object MqttService {
         } catch (e: Exception) {
             Log.e("ERROR", e.message.toString())
         }
-        Log.i("MqttSerivce", "publish выполнил работу")
     }
 
     fun subscribe(topic: String) {
@@ -129,18 +125,17 @@ object MqttService {
                 if (throwable != null) {
                     Log.e("MqttService", "Ошибка подписки: ${throwable.message}")
                 } else {
-                    subscribedTopics.add(topic) // Теперь подписки не затираются
+                    subscribedTopics.add(topic)
                     Log.i("MqttService", "Подписались на топик: $topic")
                 }
             }
     }
 
-
     fun initCoroutineScope(cs: CoroutineScope) {
         this.cs = cs
     }
 
-    fun send(topic:String, msg: String, context: Context) {
+    fun send(topic: String, msg: String, context: Context) {
         cs?.launch {
             runCatching {
                 subscribe(topic)
@@ -152,7 +147,6 @@ object MqttService {
             }
         }
     }
-
 
     fun addMsg(topic: String, msg: String) {
         val newDeque = ArrayDeque(_msgDeque.value).apply {
@@ -173,6 +167,4 @@ object MqttService {
     fun updateDeque(newDeque: ArrayDeque<Pair<String, String>>) {
         _msgDeque.value = newDeque
     }
-
-
 }

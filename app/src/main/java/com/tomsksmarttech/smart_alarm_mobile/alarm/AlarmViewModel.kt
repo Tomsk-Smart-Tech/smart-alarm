@@ -47,7 +47,6 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
 
 
     fun onAlarmChange(updatedAlarm: Alarm) {
-
         updatedAlarm.isSended = false
         val currentList = repository.alarms.value
         val newList = currentList.map { it ->
@@ -56,6 +55,7 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
         repository.updateAlarms(newList)
         // todo проверить работает ли так
 //        MqttService.initCoroutineScope(coroutineScope)
+        SingleAlarmManager.setAlarm(updatedAlarm.id)
         Log.d("SEND", "I WANT TO SEND ${repository.alarms.value}")
     }
 
