@@ -18,14 +18,14 @@ class AlarmObserver(val context: Context) : MqttObserver {
 //                    AlarmRepository.updateAlarms(receivedAlarms)
 //                }
 
-                Log.d("ONNOTITFY", "received json: ${AlarmRepository.alarms.value}")
+//                Log.d("ONNOTITFY", "received json: ${AlarmRepository.alarms.value}")
             } else if (topic == "mqtt/sensors") {
-                val receivedData = msg.split(" ").map{ it.toDouble() }
-                SharedData.temperature = mutableDoubleStateOf(receivedData[0])
-                SharedData.humidity = mutableDoubleStateOf(receivedData[1])
-                SharedData.voc = mutableDoubleStateOf(receivedData[2])
+                val receivedData = msg.split(" ").map { it.toDouble() }
+                SharedData.temperature.doubleValue = receivedData[0]
+                SharedData.humidity.doubleValue = receivedData[1]
+                SharedData.voc.doubleValue = receivedData[2]
 
-                Log.d("ONNOTIFY", "received: $msg")
+//                Log.d("ONNOTIFY", "received: $msg")
             }
         }
     }

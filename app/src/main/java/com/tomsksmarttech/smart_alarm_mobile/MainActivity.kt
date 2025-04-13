@@ -2,7 +2,9 @@ package com.tomsksmarttech.smart_alarm_mobile
 
 import SingleAlarmManager
 import android.Manifest
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -48,9 +50,12 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver.Companion.NOTIFICATION_CLICKED
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmViewModel
+import com.tomsksmarttech.smart_alarm_mobile.alarm.MediaManager
 import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
@@ -70,19 +75,50 @@ class MainActivity : ComponentActivity() {
             ?: Screens.Home.route
     }
 
+//    override fun onNewIntent(intent: Intent) {
+//        Log.d("MAIN ACTIVITY", "On new intent called, sending to cancel alarm")
+//        if (intent.action == "STOP_ALARM") {
+//            val stopIntent = Intent(this, AlarmReceiver::class.java).apply {
+//                action = NOTIFICATION_CLICKED
+//            }
+//            val pendingIntent = PendingIntent.getBroadcast(
+//                this,
+//                0,
+//                stopIntent,
+//                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+//            )
+//            pendingIntent.send()
+//        }
+//        super.onNewIntent(intent)
+//    }
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         targetRoute
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
 
+        if (intent?.getBooleanExtra("notification_action_clicked", false) == true) {
+            Log.d("MainActivity", "Получен клик по телу уведомления")
+            val stopIntent = Intent(this, AlarmReceiver::class.java).apply {
+                action = NOTIFICATION_CLICKED
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                stopIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            pendingIntent.send()
+        }
+//        MediaManager.stopMediaPlayback()
         MqttService.init(this)
-//        SingleAlarmManager.init(this)
+        SingleAlarmManager.init(this)
 
         MqttService.connect()
-
-        MqttService.addObserver(ao)
         Log.d("CONNECT", "Connected to mqtt")
+        MqttService.addObserver(ao)
+        MqttService.subscribe(SENSORS_TOPIC)
 
         val audioPermission = Manifest.permission.READ_MEDIA_AUDIO
         if (SharedData.checkPermission(this, audioPermission) && musicList.value.isEmpty()) {

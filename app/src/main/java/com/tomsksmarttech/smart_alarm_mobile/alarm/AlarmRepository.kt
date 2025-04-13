@@ -101,8 +101,8 @@ object AlarmRepository {
         }
     }
 
-    fun cancelAlarm(id: Int) {
-        SingleAlarmManager.cancelAlarm(id)
+    fun cancelAlarm(alarm: Alarm) {
+        SingleAlarmManager.cancelAlarm(alarm)
         sortAlarms()
         MqttService.addList(ALARMS_TOPIC, alarms.value)
     }

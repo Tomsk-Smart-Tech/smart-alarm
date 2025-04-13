@@ -251,7 +251,7 @@ fun AlarmItem(
                     if (isEnabled) {
                         viewModel.setAlarm(alarm.id)
                     } else {
-                        viewModel.cancelAlarm(alarm.id)
+                        viewModel.cancelAlarm(alarm)
                     }
                 }
             )
@@ -334,7 +334,7 @@ fun AlarmItem(
                             onAlarmRemove(alarm.id)
                             // todo вроде вызван onAlarmRemove и отправка должна произойти сама
 //                            viewModel.removeAlarm(alarm.id)
-                            viewModel.cancelAlarm(alarm.id)
+                            viewModel.cancelAlarm(alarm)
                             Log.d("ALARM", "removed alarm")
                         })
                         .padding(6.dp),

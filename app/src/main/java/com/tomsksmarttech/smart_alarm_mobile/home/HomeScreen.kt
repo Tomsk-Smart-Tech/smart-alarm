@@ -70,10 +70,9 @@ fun HomeScreen(navController: NavController? = null) {
     val coroutineScope = rememberCoroutineScope()
     var isConnected = MqttService.connectionState.collectAsState()
 
-    var temperature by remember { SharedData.temperature }
+    val temperature by remember { SharedData.temperature }
     var humidity by remember { SharedData.humidity }
-
-
+    
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
@@ -111,8 +110,8 @@ fun HomeScreen(navController: NavController? = null) {
 //                    sf.sendMessage("Test", "mqtt/alarms")
                     MqttService.connect()
                     Log.d("EVENTS", "connected in sf")
-                    MqttService.subscribe(SENSORS_TOPIC)
                     MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
+                    MqttService.subscribe(SENSORS_TOPIC)
 //                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
                     if (isConnected.value) {
                         Toast.makeText(

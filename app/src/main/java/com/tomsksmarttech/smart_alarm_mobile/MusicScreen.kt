@@ -359,9 +359,8 @@ fun MusicLibrary(
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
     } else
         if (showDialog) {
-        SingleAlarmManager.cancelAlarm(currentAlarmId)
-        SingleAlarmManager.setAlarm(currentAlarmId)
-//        SharedData.setAlarmId(0)
+        viewModel.cancelAlarm(currentAlarmId)
+            viewModel.setAlarm(currentAlarmId)
     }
 }
 
