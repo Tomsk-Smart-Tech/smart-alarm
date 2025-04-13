@@ -7,6 +7,7 @@ import android.icu.text.SimpleDateFormat
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -62,8 +63,10 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
 import java.util.Date
 import androidx.core.net.toUri
+import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import kotlinx.coroutines.coroutineScope
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
@@ -81,6 +84,14 @@ fun HomeScreen(navController: NavController? = null) {
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    }
+
+    val mediaPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            HttpController(context).sendFile(context, uri.toString(), context.getString(R.string.remote_host), "image/*".toMediaTypeOrNull())
+        } else {
+            Log.d("PhotoPicker", "No media selected")
+        }
     }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -133,10 +144,7 @@ fun HomeScreen(navController: NavController? = null) {
                 }
             }
         },
-        Setting("Управление воспроизведением") {
-            coroutineScope.launch {
-                SpotifyPkceLogin().getCurrentTrackInfo(context)
-            }
+//        Setting("Управление воспроизведением") {
 //            if (navController != null) {
 //                navController.navigate("music_player_route") {
 //                    popUpTo(navController.graph.findStartDestination().id) {
@@ -146,7 +154,7 @@ fun HomeScreen(navController: NavController? = null) {
 //                    restoreState = true
 //                }
 //            }
-        },
+//        },
         Setting("Подключение Spotify") {
 
             activity?.let {
@@ -154,6 +162,11 @@ fun HomeScreen(navController: NavController? = null) {
                     SpotifyPkceLogin().getAccessToken(it)
                 }
             } ?: Log.e("SpotifyAuth", "Activity is null!")
+        },
+        Setting("Сменить фон") {
+            mediaPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
         },
         Setting(stringResource(R.string.tab_about)) {
             val browserIntent = Intent(
