@@ -28,7 +28,7 @@ object MqttService {
     private var isConnected = false
     private val observers = mutableListOf<MqttObserver>()
     val subscribedTopics = mutableSetOf<String>()
-    val connectionState = MutableStateFlow(false)
+    val connectionState = MutableStateFlow(0) // -1 - не подключено, 0 - подключение, 1 - подключено
     private var cs: CoroutineScope? = null
     private val _msgDeque = MutableStateFlow(ArrayDeque<Pair<String, String>>())
     val deque = _msgDeque.asStateFlow()
@@ -65,11 +65,11 @@ object MqttService {
             .send()
             .whenComplete { _, throwable ->
                 if (throwable != null) {
-                    connectionState.value = false
+                    connectionState.value = -1
                     Log.e("MqttService", "Ошибка подключения: ${throwable.message}")
                 } else {
                     isConnected = true
-                    connectionState.value = true
+                    connectionState.value = 1
                     Log.i("MqttService", "Успешное подключение к брокеру")
                 }
             }

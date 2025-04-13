@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import androidx.core.net.toUri
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
+import kotlinx.coroutines.coroutineScope
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
@@ -117,7 +118,7 @@ fun HomeScreen(navController: NavController? = null) {
                     MqttService.subscribe(SENSORS_TOPIC)
                     MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
 //                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
-                    if (isConnected.value) {
+                    if (isConnected.value == 1) {
                         Toast.makeText(
                             context,
                             context.getString(R.string.notif_device_connected_success),
@@ -182,7 +183,7 @@ fun HomeScreen(navController: NavController? = null) {
 //                        sf.sendMessage(events, "mqtt/events")
                         MqttService.addMsg(EVENTS_TOPIC, events)
                         Log.d("EVENTS", "added message, deque is: ${MqttService.deque.value}")
-                        if (isConnected.value) {
+                        if (isConnected.value == 1) {
                             Toast.makeText(
                                 context,
                                 context.getString(R.string.notif_device_connected_success),
@@ -288,7 +289,7 @@ fun HomeScreen(navController: NavController? = null) {
                     }
                     Row {
                         Log.d("ALARM", "is connected: ${isConnected.value}")
-                        if (isConnected.value) {
+                        if (isConnected.value == 1) {
                             Icon(
                                 painterResource(R.drawable.ic_dot),
                                 contentDescription = "Connected",
@@ -300,6 +301,18 @@ fun HomeScreen(navController: NavController? = null) {
                                     .width(10.dp)
                             )
                             Text(text = "Устройство подключено", fontWeight = FontWeight.Bold)
+                        } else if (isConnected.value == 0) {
+                            Icon(
+                                painterResource(R.drawable.ic_loading),
+                                contentDescription = "Connecting",
+                                tint = Color.Yellow
+                            )
+                            Spacer(
+                                Modifier
+                                    .fillMaxHeight()
+                                    .width(10.dp)
+                            )
+                            Text(text = "Подключение...", fontWeight = FontWeight.Bold)
                         } else {
                             Icon(
                                 painterResource(R.drawable.ic_dot),
@@ -355,6 +368,35 @@ fun SettingCard(setting: String, onClick: (context: Context) -> (Unit)) {
             )
         }
     }
+}
+
+
+fun reconnectToDevice(context: Context,isConnected: Boolean) {
+    try {
+//                    val sf = SettingsFunctions()
+//                    sf.connectToDevice(context)
+//                    sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
+//                    sf.sendMessage("Test", "mqtt/sensors")
+//                    sf.sendMessage("Test", "mqtt/alarms")
+        MqttService.connect()
+        Log.d("EVENTS", "connected in sf")
+        MqttService.subscribe(SENSORS_TOPIC)
+        MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
+//                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
+        if (isConnected) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.notif_device_connected_success),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG
+        ).show()
+    }
+
 }
 
 @Preview

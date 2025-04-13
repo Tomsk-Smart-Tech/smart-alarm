@@ -21,7 +21,8 @@ class MqttCheckService : Service(), MqttObserver {
 
     fun checkMqtt(callback: (Boolean) -> Unit) {
         checkCallback = callback
-        if (!MqttService.connectionState.value) {
+        if (MqttService.connectionState.value == -1) {
+            MqttService.connectionState.value = 0
             MqttService.init(this)
         }
         MqttService.subscribe(CHECK_TOPIC)
