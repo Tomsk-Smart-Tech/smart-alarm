@@ -169,10 +169,10 @@ fun HomeScreen(navController: NavController? = null) {
                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
             )
         },
-        Setting(stringResource(R.string.tab_about)) {
+        Setting(stringResource(R.string.about_device)) {
             val browserIntent = Intent(
                 Intent.ACTION_VIEW,
-                "https://alice.yandex.ru/support/ru/station/index-gen2".toUri()
+                context.getString(R.string.index).toUri()
             )
             startActivity(context, browserIntent, null)
         },
@@ -218,7 +218,7 @@ fun HomeScreen(navController: NavController? = null) {
             }
 
         },
-        Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
+//        Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
     )
 
 

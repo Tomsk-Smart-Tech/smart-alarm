@@ -373,7 +373,7 @@ fun MusicLibrary(
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
     } else
         if (showDialog) {
-        viewModel.cancelAlarm(currentAlarmId)
+            viewModel.cancelAlarm(currentAlarmId)
             viewModel.setAlarm(currentAlarmId)
     }
 }
