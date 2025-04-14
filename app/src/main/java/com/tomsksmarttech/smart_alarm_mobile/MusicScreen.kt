@@ -13,6 +13,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -217,133 +218,146 @@ fun MusicLibrary(
         isPlaying = false
     }
     if (SharedData.loadMusicJob.collectAsState().value?.isCompleted == true && musicList.isEmpty()) {
-        Text("Музыка не найдена", modifier = Modifier.padding(innerPadding))
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text(
+                "Музыка не найдена", modifier = Modifier
+                    .padding(innerPadding),
+                fontSize = MaterialTheme.typography.headlineLarge.fontSize,
+                fontWeight = MaterialTheme.typography.headlineLarge.fontWeight
+            )
+        }
     } else if (SharedData.loadMusicJob.collectAsState().value?.isCompleted == false) {
-        Text("Загрузка библиотеки...", modifier = Modifier.padding(innerPadding))
-    }
-    LazyColumn(
-        modifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize(),
-    ) {
-        items(
-            if (isSearchClicked) {
-                musicList.filter {
-                    it.name.lowercase().contains(searchedText.lowercase())
-                }
-            } else {
-                musicList.sortedBy {
-                    it.name
-                }
-            }, key = { audio ->
-                audio.uri
-            }) { audio ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 15.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(5.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(5.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            audio.name,
-                            textAlign = TextAlign.Left,
-                            modifier = Modifier
-                                .widthIn(min = 100.dp, max = 200.dp)
-                                .basicMarquee(),
-//                            overflow = TextOverflow.Ellipsis,
-                            maxLines = 1,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                        )
-                        Spacer(modifier = Modifier.width(5.dp))
-                        val mins = audio.duration.div(1000 * 60)
-                        val secs = (audio.duration.div(1000).rem(60))
-                        Text(
-                            String.format("%02d:%02d", mins, secs),
-                            textAlign = TextAlign.Right,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                            maxLines = 1,
-                        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text("Загрузка библиотеки...", modifier = Modifier.padding(innerPadding), fontSize = MaterialTheme.typography.headlineLarge.fontSize, fontWeight = MaterialTheme.typography.headlineLarge.fontWeight)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+        ) {
+            items(
+                if (isSearchClicked) {
+                    musicList.filter {
+                        it.name.lowercase().contains(searchedText.lowercase())
                     }
-                    Row(
+                } else {
+                    musicList.sortedBy {
+                        it.name
+                    }
+                }, key = { audio ->
+                    audio.uri
+                }) { audio ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 15.dp)
+                ) {
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxHeight()
                             .padding(5.dp)
                     ) {
-                        Button(onClick = {
-                            Log.d("IS_PLAYING", mediaPlayer.isPlaying.toString())
-                            if (nowPlaying != audio.uri) {
-                                if (mediaPlayer.isPlaying) {
-                                    mediaPlayer.stop()
-                                    mediaPlayer.reset()
-                                }
-                                nowPlaying = null
-                                mediaPlayer = MediaPlayer.create(context, audio.uri)
-                                mediaPlayer.start()
-                                nowPlaying = audio.uri
-                                isPlaying = true
-                            } else if (nowPlaying == audio.uri) {
-                                nowPlaying = null
-                                mediaPlayer.stop()
-                                isPlaying = false
-                            }
-                        }) {
-                            if (nowPlaying == audio.uri && isPlaying) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.ic_pause),
-                                    contentDescription = "Play/Pause"
-                                )
-
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Filled.PlayArrow,
-                                    contentDescription = "Play/Pause"
-                                )
-                            }
-//                                    Text("Воспроизвести")
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Button(onClick = { showDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.AddCircle,
-                                contentDescription = "Create new alarm"
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                audio.name,
+                                textAlign = TextAlign.Left,
+                                modifier = Modifier
+                                    .widthIn(min = 100.dp, max = 200.dp)
+                                    .basicMarquee(),
+//                            overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize
                             )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            val mins = audio.duration.div(1000 * 60)
+                            val secs = (audio.duration.div(1000).rem(60))
+                            Text(
+                                String.format("%02d:%02d", mins, secs),
+                                textAlign = TextAlign.Right,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                                maxLines = 1,
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(5.dp)
+                        ) {
+                            Button(onClick = {
+                                Log.d("IS_PLAYING", mediaPlayer.isPlaying.toString())
+                                if (nowPlaying != audio.uri) {
+                                    if (mediaPlayer.isPlaying) {
+                                        mediaPlayer.stop()
+                                        mediaPlayer.reset()
+                                    }
+                                    nowPlaying = null
+                                    mediaPlayer = MediaPlayer.create(context, audio.uri)
+                                    mediaPlayer.start()
+                                    nowPlaying = audio.uri
+                                    isPlaying = true
+                                } else if (nowPlaying == audio.uri) {
+                                    nowPlaying = null
+                                    mediaPlayer.stop()
+                                    isPlaying = false
+                                }
+                            }) {
+                                if (nowPlaying == audio.uri && isPlaying) {
+                                    Icon(
+                                        imageVector = ImageVector.vectorResource(R.drawable.ic_pause),
+                                        contentDescription = "Play/Pause"
+                                    )
+
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Filled.PlayArrow,
+                                        contentDescription = "Play/Pause"
+                                    )
+                                }
+//                                    Text("Воспроизвести")
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Button(onClick = { showDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.AddCircle,
+                                    contentDescription = "Create new alarm"
+                                )
 //                            TODO()
-                            if (currentAlarmId == -1) {
-                                Text(
-                                    stringResource(R.string.create_new_alarm),
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            } else {
-                                Text(
-                                    "Выбрать этот трек",
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                if (currentAlarmId == -1) {
+                                    Text(
+                                        stringResource(R.string.create_new_alarm),
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                } else {
+                                    Text(
+                                        "Выбрать этот трек",
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
                 }
+                lastAudio = audio
             }
-            lastAudio = audio
         }
     }
     if (showDialog && currentAlarmId == 0) {
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
-                Log.d("ALARM", "Creating new with id from music ${AlarmRepository.alarms.value.last()}")
+                Log.d(
+                    "ALARM",
+                    "Creating new with id from music ${AlarmRepository.alarms.value.last()}"
+                )
                 Log.d("ALARM", "and list is music ${AlarmRepository.alarms.value}")
                 SingleAlarmManager.setAlarm(AlarmRepository.alarms.value.last().id)
                 AlarmRepository.saveAlarms(httpController, coroutineScope)

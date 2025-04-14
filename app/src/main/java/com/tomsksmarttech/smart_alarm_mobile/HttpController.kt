@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.ConnectionPool
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -32,7 +33,7 @@ import kotlin.collections.removeAll
 
 class HttpController(val context: Context) {
 
-    fun sendAudio(ctx: Context, uri: String, serverUrl: String) {
+    fun sendFile (ctx: Context, uri: String, serverUrl: String, mediaType: MediaType? = null) {
         val parsedUri = uri.toUri()
         Log.d("Upload", "URI: $uri, Scheme: ${parsedUri.scheme}")
 
@@ -54,7 +55,7 @@ class HttpController(val context: Context) {
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("filename", fileName)
                 .addFormDataPart("file", fileName, object : RequestBody() {
-                    override fun contentType() = "audio/*".toMediaTypeOrNull()
+                    override fun contentType() = mediaType
                     override fun writeTo(sink: BufferedSink) {
                         inputStream.source().use { source -> sink.writeAll(source) }
                     }
@@ -102,10 +103,11 @@ class HttpController(val context: Context) {
                 if (alarm.musicUri == null) alarm.musicUri =
                     getDefaultAlarmRingtoneUri().toString();
 
-                sendAudio(
+                sendFile(
                     context,
                     alarm.musicUri.toString(),
-                    context.getString(R.string.remote_host)
+                    context.getString(R.string.remote_host),
+                    "audio/*".toMediaTypeOrNull()
                 )
                 delay(500)
             }

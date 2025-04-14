@@ -14,6 +14,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.1"
+        manifestPlaceholders["redirectHostName"] = "callback"
+        manifestPlaceholders["redirectSchemeName"] = "myapp"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -67,7 +69,8 @@ dependencies {
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.okhttp)
     implementation(libs.androidx.documentfile)
-//    implementation(libs.spotify.api.kotlin.core)
+    implementation(libs.spotify.api.kotlin.core.v413)
+    implementation(libs.spotify.api.kotlin.android)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

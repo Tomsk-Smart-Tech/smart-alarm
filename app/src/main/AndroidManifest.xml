@@ -31,13 +31,25 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Smartalarmmobile">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${redirectSchemeName}" android:host="${redirectHostName}"/>
+            </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.spotify.sdk.android.auth.browser.RedirectUriReceiverActivity"
+            tools:node="remove" />
+
         <receiver android:name=".alarm.AlarmReceiver"
             android:enabled="true"
             android:exported="false">
@@ -67,4 +79,5 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
     </application>
+
 </manifest>

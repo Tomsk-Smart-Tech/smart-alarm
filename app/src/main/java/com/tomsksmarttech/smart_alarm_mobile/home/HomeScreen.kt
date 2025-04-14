@@ -1,5 +1,6 @@
 package com.tomsksmarttech.smart_alarm_mobile.home
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.icu.text.SimpleDateFormat
@@ -7,6 +8,7 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -61,7 +63,11 @@ import com.tomsksmarttech.smart_alarm_mobile.calendar.CalendarEvents
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
 import java.util.Date
-import java.util.Locale
+import androidx.core.net.toUri
+import com.tomsksmarttech.smart_alarm_mobile.HttpController
+import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
+import kotlinx.coroutines.coroutineScope
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 @Composable
 fun HomeScreen(navController: NavController? = null) {
@@ -70,12 +76,23 @@ fun HomeScreen(navController: NavController? = null) {
     val coroutineScope = rememberCoroutineScope()
     var isConnected = MqttService.connectionState.collectAsState()
 
-    val temperature by remember { SharedData.temperature }
+    var temperature by remember { SharedData.temperature }
     var humidity by remember { SharedData.humidity }
-    
+    val activity = LocalContext.current as? Activity
+    var voc by remember { SharedData.voc }
+
+
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
         mutableStateOf(context.checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+    }
+
+    val mediaPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            HttpController(context).sendFile(context, uri.toString(), context.getString(R.string.remote_host), "image/*".toMediaTypeOrNull())
+        } else {
+            Log.d("PhotoPicker", "No media selected")
+        }
     }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -110,10 +127,10 @@ fun HomeScreen(navController: NavController? = null) {
 //                    sf.sendMessage("Test", "mqtt/alarms")
                     MqttService.connect()
                     Log.d("EVENTS", "connected in sf")
-                    MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
                     MqttService.subscribe(SENSORS_TOPIC)
+                    MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
 //                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
-                    if (isConnected.value) {
+                    if (isConnected.value == 1) {
                         Toast.makeText(
                             context,
                             context.getString(R.string.notif_device_connected_success),
@@ -128,21 +145,34 @@ fun HomeScreen(navController: NavController? = null) {
                 }
             }
         },
-        Setting("Управление воспроизведением") {
-            if (navController != null) {
-                navController.navigate("music_player_route") {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
+//        Setting("Управление воспроизведением") {
+//            if (navController != null) {
+//                navController.navigate("music_player_route") {
+//                    popUpTo(navController.graph.findStartDestination().id) {
+//                        saveState = true
+//                    }
+//                    launchSingleTop = true
+//                    restoreState = true
+//                }
+//            }
+//        },
+        Setting("Подключение Spotify") {
+
+            activity?.let {
+                coroutineScope.launch {
+                    SpotifyPkceLogin().getAccessToken(it)
                 }
-            }
+            } ?: Log.e("SpotifyAuth", "Activity is null!")
+        },
+        Setting("Сменить фон") {
+            mediaPicker.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
         },
         Setting(stringResource(R.string.tab_about)) {
             val browserIntent = Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://alice.yandex.ru/support/ru/station/index-gen2")
+                "https://alice.yandex.ru/support/ru/station/index-gen2".toUri()
             )
             startActivity(context, browserIntent, null)
         },
@@ -157,7 +187,7 @@ fun HomeScreen(navController: NavController? = null) {
                         CalendarEvents().parseCalendarEvents(
                             context,
                             currentDateParsed.time,
-//                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
+                            SimpleDateFormat("dd-MM-yyyy").parse("01-01-2026").time
                         )
                     )
                     try {
@@ -167,7 +197,7 @@ fun HomeScreen(navController: NavController? = null) {
 //                        sf.sendMessage(events, "mqtt/events")
                         MqttService.addMsg(EVENTS_TOPIC, events)
                         Log.d("EVENTS", "added message, deque is: ${MqttService.deque.value}")
-                        if (isConnected.value) {
+                        if (isConnected.value == 1) {
                             Toast.makeText(
                                 context,
                                 context.getString(R.string.notif_device_connected_success),
@@ -204,7 +234,8 @@ fun HomeScreen(navController: NavController? = null) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp)
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
                             painter = painterResource(R.drawable.kumquat),
@@ -236,11 +267,11 @@ fun HomeScreen(navController: NavController? = null) {
                                     painter = painterResource(R.drawable.ic_temperature),
                                     contentDescription = "Temperature",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.scale(1.5f)
+                                    modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
                                     "${temperature}°C",
-                                    fontSize = 30.sp,
+                                    fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(Modifier.width(10.dp))
@@ -248,11 +279,23 @@ fun HomeScreen(navController: NavController? = null) {
                                     painter = painterResource(R.drawable.ic_humidity),
                                     contentDescription = "Humidity",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.scale(1.5f)
+                                    modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
                                     "${humidity}%",
-                                    fontSize = 30.sp,
+                                    fontSize = 27.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_air),
+                                    contentDescription = "CO2",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.scale(1.4f)
+                                )
+                                Text(
+                                    "${voc}",
+                                    fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -260,7 +303,7 @@ fun HomeScreen(navController: NavController? = null) {
                     }
                     Row {
                         Log.d("ALARM", "is connected: ${isConnected.value}")
-                        if (isConnected.value) {
+                        if (isConnected.value == 1) {
                             Icon(
                                 painterResource(R.drawable.ic_dot),
                                 contentDescription = "Connected",
@@ -272,6 +315,18 @@ fun HomeScreen(navController: NavController? = null) {
                                     .width(10.dp)
                             )
                             Text(text = "Устройство подключено", fontWeight = FontWeight.Bold)
+                        } else if (isConnected.value == 0) {
+                            Icon(
+                                painterResource(R.drawable.ic_loading),
+                                contentDescription = "Connecting",
+                                tint = Color.Yellow
+                            )
+                            Spacer(
+                                Modifier
+                                    .fillMaxHeight()
+                                    .width(10.dp)
+                            )
+                            Text(text = "Подключение...", fontWeight = FontWeight.Bold)
                         } else {
                             Icon(
                                 painterResource(R.drawable.ic_dot),
@@ -327,6 +382,35 @@ fun SettingCard(setting: String, onClick: (context: Context) -> (Unit)) {
             )
         }
     }
+}
+
+
+fun reconnectToDevice(context: Context,isConnected: Boolean) {
+    try {
+//                    val sf = SettingsFunctions()
+//                    sf.connectToDevice(context)
+//                    sf.sendMessage("Hello, I'm ESP32 ^_^", "mqtt/test")
+//                    sf.sendMessage("Test", "mqtt/sensors")
+//                    sf.sendMessage("Test", "mqtt/alarms")
+        MqttService.connect()
+        Log.d("EVENTS", "connected in sf")
+        MqttService.subscribe(SENSORS_TOPIC)
+        MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
+//                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
+        if (isConnected) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.notif_device_connected_success),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.notif_device_connected_failed), Toast.LENGTH_LONG
+        ).show()
+    }
+
 }
 
 @Preview
