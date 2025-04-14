@@ -30,6 +30,10 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
         repository.updateCurrAlarmIndex()
     }
 
+    fun setCurrentAlarmId(id: Int) {
+        AlarmRepository.setCurrentAlarmId(id)
+    }
+
     fun onAlarmRemove(removedAlarmId: Int) {
         repository.removeAlarm(removedAlarmId)
     }

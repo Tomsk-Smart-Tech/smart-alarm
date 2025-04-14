@@ -19,6 +19,8 @@ import kotlin.collections.sortBy
 object AlarmRepository {
     private val _currentAlarmId = MutableStateFlow(0)
     val currentAlarmId: StateFlow<Int> = _currentAlarmId
+    private val _playingAlarmId = MutableStateFlow(0)
+    var playingAlarmId: StateFlow<Int> = _currentAlarmId
 
     private val _alarms = MutableStateFlow(mutableListOf<Alarm>())
     val alarms: StateFlow<List<Alarm>> = _alarms
@@ -29,6 +31,11 @@ object AlarmRepository {
         MqttService.addList(ALARMS_TOPIC, alarms.value.toList())
 
     }
+
+    fun setPlayingAlarmId(id: Int) {
+        _playingAlarmId.value = id
+    }
+
     fun loadAlarms(context: Context) {
 
 //        var pendingAlarms = mutableListOf<Alarm>()
@@ -113,4 +120,7 @@ object AlarmRepository {
         MqttService.addList(ALARMS_TOPIC, alarms.value)
     }
 
+    fun setCurrentAlarmId(id: Int) {
+        _currentAlarmId.value = id
+    }
 }

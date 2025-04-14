@@ -6,8 +6,11 @@ import android.app.ComponentCaller
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,27 +20,38 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
@@ -67,11 +81,12 @@ import kotlinx.coroutines.launch
 const val durationMillis = 600
 lateinit var viewModel: AlarmViewModel
 class MainActivity : ComponentActivity() {
+    companion object {
+        lateinit var spotifyPkceLogin: SpotifyPkceLogin
+    }
 
     val ao = AlarmObserver(this)
-    lateinit var spotifyPkceLogin: SpotifyPkceLogin
     val targetRoute by lazy {
-
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
             ?: Screens.Home.route
     }
@@ -121,12 +136,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
-        WorkManager.getInstance(this).enqueue(saveWorkRequest)
-    }
-
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         targetRoute
@@ -137,6 +146,16 @@ class MainActivity : ComponentActivity() {
         val viewModelHolder = ViewModelHolder(this)
         viewModel = viewModelHolder.get("AlarmViewModel") {
             AlarmViewModel(application, alarmRepo)
+        }
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val isIgnoringBatteryOptimizations = powerManager.isIgnoringBatteryOptimizations(packageName)
+            if (!isIgnoringBatteryOptimizations) {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            }
         }
 
         if (intent?.getBooleanExtra("notification_action_clicked", false) == true) {
@@ -151,6 +170,12 @@ class MainActivity : ComponentActivity() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
             pendingIntent.send()
+            SharedData.isAlarmDialog.value = true
+//            setContent{
+//                AlarmCancelDialog( onDismis = {
+//
+//                })
+//            }
         } else if (intent?.getBooleanExtra("notification_clicked", false) == false) {
             viewModel.init()
         }
@@ -200,8 +225,6 @@ class MainActivity : ComponentActivity() {
                 BottomNavigationBar(targetRoute)
             }
         }
-
-
 //        Log.d("PENDING", "pending alarms: $pendingAlarms")
 //        SharedData.sortAlarms()
 //        pendingAlarms.sortBy{ alarm: Alarm ->
@@ -217,9 +240,14 @@ class MainActivity : ComponentActivity() {
 //        }
 
 //        MqttService.addList("mqtt/alarms", pendingAlarms.toList())
-        SingleAlarmManager.init(this)
+//        SingleAlarmManager.init(this)
     }
 
+    override fun onStop() {
+        super.onStop()
+        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
+        WorkManager.getInstance(this).enqueue(saveWorkRequest)
+    }
 //    override fun onStop() {
 //        super.onStop()
 //        val saveWorkRequest = OneTimeWorkRequestBuilder<SaveAlarmsWorker>().build()
@@ -322,6 +350,9 @@ class MainActivity : ComponentActivity() {
                                 if (currentRoute != item.route) {
                                     //todo разобраться что происхрдит
 //                                AlarmRepository.setAlarmId(0)
+                                    if (item.route == Screens.Music.route) {
+                                        AlarmRepository.setCurrentAlarmId(0)
+                                    }
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true

@@ -108,31 +108,48 @@ object SingleAlarmManager {
 
         // протестировать
         if (currAlarm.repeatDays.find{ it == true } != null) {
-            scheduleAlarm(currAlarm)
+            scheduleAlarm(currAlarm, calendar)
         } else {
             scheduleAlarmForDay(currAlarm, Calendar.getInstance().get(Calendar.DAY_OF_WEEK))
         }
     }
 
-    fun scheduleAlarm(alarm: Alarm) {
+    fun scheduleAlarm(alarm: Alarm, calendar: Calendar) {
         for (i in 0..6) {
             if (alarm.repeatDays[i]) {
                 scheduleAlarmForDay(alarm, daysOfWeek[i])
             }
         }
     }
-
     fun scheduleAlarmForDay(alarm: Alarm, dayOfWeek: Int) {
         val calendar = Calendar.getInstance().apply {
+            // Устанавливаем время будильника
             set(Calendar.HOUR_OF_DAY, alarm.getHours().toInt())
             set(Calendar.MINUTE, alarm.getMinutes().toInt())
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
 
-            while (get(Calendar.DAY_OF_WEEK) != dayOfWeek) {
-                add(Calendar.DAY_OF_MONTH, 1)
+            // Если будильник разовый (без повторения)
+            if (alarm.repeatDays.none { it }) {
+                // Если время уже прошло сегодня, добавляем 1 день
+                if (timeInMillis <= System.currentTimeMillis()) {
+                    add(Calendar.DAY_OF_MONTH, 1)
+                }
+            } else {
+                // Для повторяющегося будильника
+                // Находим следующий день недели, соответствующий dayOfWeek
+                while (get(Calendar.DAY_OF_WEEK) != dayOfWeek) {
+                    add(Calendar.DAY_OF_MONTH, 1)
+                }
+
+                // Если время уже прошло в этот день, переходим к следующей неделе
+                if (timeInMillis <= System.currentTimeMillis()) {
+                    add(Calendar.DAY_OF_MONTH, 7)
+                }
             }
         }
+
+        Log.d("CALENDAR", "Alarm scheduled for: ${calendar.time}")
 
         val intent = Intent(appContext, AlarmReceiver::class.java).apply {
             action = "com.tomsksmarttech.ALARM_TRIGGERED"
@@ -148,24 +165,16 @@ object SingleAlarmManager {
             appContext,
             alarm.id * 10 + dayOfWeek, // Уникальный ID для каждого дня
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         )
+
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Log.d("TEST", "set exact and allow")
-//            systemAlarmManager!!.set(
-//                AlarmManager.RTC_WAKEUP,
-//                calendar.timeInMillis,
-//                pendingIntent)
-//            Log.d("TEST", e.message.toString())
-//            try {
                 systemAlarmManager!!.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     calendar.timeInMillis,
                     pendingIntent)
-//            } catch (e: Exception) {
-//
-//            }
             } else {
                 Log.d("TEST", "set exact")
                 systemAlarmManager!!.setExact(
@@ -173,11 +182,12 @@ object SingleAlarmManager {
                     calendar.timeInMillis,
                     pendingIntent)
             }
+            Log.d("CALENDAR", "Alarm SET for: ${calendar.time}")
         } catch (e: Exception) {
             systemAlarmManager?.set(
-            SystemAlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            pendingIntent
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
             )
         }
     }

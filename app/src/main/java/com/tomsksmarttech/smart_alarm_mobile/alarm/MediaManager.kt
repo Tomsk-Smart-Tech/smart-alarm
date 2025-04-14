@@ -34,6 +34,9 @@ object MediaManager {
         } catch (e: Exception) {
             Log.e("AlarmService", "Ошибка воспроизведения мелодии: ${e.message}")
         }
+        mediaPlayer?.setOnCompletionListener {
+            stopMediaPlayback()
+        }
     }
 
     fun stopMediaPlayback() {
@@ -41,4 +44,5 @@ object MediaManager {
         mediaPlayer?.release()
         mediaPlayer = null
     }
+
 }

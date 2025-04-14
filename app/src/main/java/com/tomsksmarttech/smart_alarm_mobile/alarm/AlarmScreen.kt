@@ -264,6 +264,7 @@ fun AlarmItem(
                         .clickable {
                             //todo ???
                             viewModel.setAlarmId(alarm.id)
+                            viewModel.setCurrentAlarmId(alarm.id)
                             navController.navigate(Screens.Music.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true

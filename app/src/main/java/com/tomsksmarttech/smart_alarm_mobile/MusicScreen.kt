@@ -213,7 +213,8 @@ fun MusicLibrary(
     var showDialog by remember {
         mutableStateOf(false)
     }
-    val currentAlarmId by AlarmRepository.currentAlarmId.collectAsState()
+//    val currentAlarmId by AlarmRepository.currentAlarmId.collectAsState()
+    val currAlarmId = AlarmRepository.currentAlarmId.collectAsState().value
     mediaPlayer.setOnCompletionListener {
         isPlaying = false
     }
@@ -331,7 +332,12 @@ fun MusicLibrary(
                                     contentDescription = "Create new alarm"
                                 )
 //                            TODO()
-                                if (currentAlarmId == -1) {
+//                                val existingAlarmId = AlarmRepository.alarms.collectAsState().value.find { it.id == currentAlarmId }?.id
+//                                Log.d("MUSIC", "last alarm: ${sortedAlarms.last().time}")
+//                                Log.d("MUSIC", existingAlarmId.toString())
+
+                                Log.d("MUSIC", currAlarmId.toString())
+                                if (currAlarmId == 0) {
                                     Text(
                                         stringResource(R.string.create_new_alarm),
                                         overflow = TextOverflow.Ellipsis
@@ -350,7 +356,7 @@ fun MusicLibrary(
             }
         }
     }
-    if (showDialog && currentAlarmId == 0) {
+    if (showDialog && currAlarmId == 0) {
         DialClockDialog(
             null,
             onConfirm = { timePickerState ->
@@ -360,6 +366,7 @@ fun MusicLibrary(
                 )
                 Log.d("ALARM", "and list is music ${AlarmRepository.alarms.value}")
                 SingleAlarmManager.setAlarm(AlarmRepository.alarms.value.last().id)
+                Log.d("ALARM", "with id ${AlarmRepository.alarms.value.last().id}")
                 AlarmRepository.saveAlarms(httpController, coroutineScope)
                 showDialog = false
             },
@@ -373,8 +380,8 @@ fun MusicLibrary(
         Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
     } else
         if (showDialog) {
-            viewModel.cancelAlarm(currentAlarmId)
-            viewModel.setAlarm(currentAlarmId)
+        viewModel.cancelAlarm(currAlarmId)
+            viewModel.setAlarm(currAlarmId)
     }
 }
 

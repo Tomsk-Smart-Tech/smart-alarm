@@ -28,9 +28,12 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,7 +68,9 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import androidx.core.net.toUri
 import com.tomsksmarttech.smart_alarm_mobile.HttpController
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
+import com.tomsksmarttech.smart_alarm_mobile.viewModel
 import kotlinx.coroutines.coroutineScope
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
@@ -80,7 +85,7 @@ fun HomeScreen(navController: NavController? = null) {
     var humidity by remember { SharedData.humidity }
     val activity = LocalContext.current as? Activity
     var voc by remember { SharedData.voc }
-
+    var isAlarmDialog = SharedData.isAlarmDialog.collectAsState()
 
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
@@ -177,7 +182,6 @@ fun HomeScreen(navController: NavController? = null) {
             startActivity(context, browserIntent, null)
         },
         Setting("Импортировать календарь") {
-
             val currentDateString = SimpleDateFormat("dd-MM-yyyy").format(Date())
             val currentDateParsed = SimpleDateFormat("dd-MM-yyyy").parse(currentDateString)
             Toast.makeText(context, "События из календаря импортированы", Toast.LENGTH_LONG).show()
@@ -221,7 +225,6 @@ fun HomeScreen(navController: NavController? = null) {
 //        Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
     )
 
-
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(
             modifier = Modifier
@@ -240,7 +243,12 @@ fun HomeScreen(navController: NavController? = null) {
                         Image(
                             painter = painterResource(R.drawable.kumquat),
                             contentDescription = "Our alarm",
-                            Modifier.padding(20.dp)
+                            Modifier.padding(20.dp).clickable{
+                                Toast.makeText(
+                                        context,
+                                context.getString(R.string.kumquat),
+                                Toast.LENGTH_SHORT).show()
+                            }
                         )
                         Spacer(
                             modifier = Modifier
@@ -326,6 +334,7 @@ fun HomeScreen(navController: NavController? = null) {
                                     .fillMaxHeight()
                                     .width(10.dp)
                             )
+
                             Text(text = "Подключение...", fontWeight = FontWeight.Bold)
                         } else {
                             Icon(
@@ -352,8 +361,67 @@ fun HomeScreen(navController: NavController? = null) {
             }
         }
     }
+    if (isAlarmDialog.value) {
+        AlarmCancelDialog( onCancel = {
+            SharedData.isAlarmDialog.value = false
+            val currAlarm = viewModel.alarms.value.find {
+                it.id == AlarmRepository.playingAlarmId.value
+            }
+            if (currAlarm != null) {
+                currAlarm.isEnabled = false
+                if (currAlarm.repeatDays.find {it == true } == false) {
+                    currAlarm.isEnabled = false
+                    AlarmRepository.removeAlarm(currAlarm.id)
+                    AlarmRepository.addAlarm(currAlarm)
+                }
+            }
+        },
+        )
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AlarmCancelDialog(
+    onCancel: () -> Unit,
+//    viewModel: AlarmViewModel,
+//    AlarmId: Int,
+) {
+    ModalBottomSheet(
+        modifier = Modifier
+            .wrapContentHeight()
+            .padding(),
+        onDismissRequest = {
+            onCancel()
+        }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(
+                modifier = Modifier.padding(2.dp),
+                onClick = {
+                    onCancel()
+                },
+            ) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+            Spacer(modifier = Modifier.weight(1f))
+//            Button(
+//                modifier = Modifier.padding(2.dp),
+//                onClick = {
+//                    alarm.repeatDays = selectedOptions.toList()
+//                    Log.d("ALARM", "Saved repeat days: ${alarm.repeatDays}")
+//                    onConfirm()
+//                },
+//            ) {
+//                Text(stringResource(R.string.btn_confirm))
+//            }
+        }
+    }
+}
 
 @Composable
 fun SettingCard(setting: String, onClick: (context: Context) -> (Unit)) {

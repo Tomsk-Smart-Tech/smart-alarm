@@ -33,6 +33,7 @@
     <string name="btn_delete_alarm">Удалить будильник</string>
     <string name="alarm_ring_text">Будильник сработал!</string>
     <string name="alarm_stop_text">Остановить</string>
+    <string name="kumquat">Kumquat!</string>
     <plurals name="hours">
         <item quantity="one">%d час</item>
         <item quantity="few">%d часа</item>

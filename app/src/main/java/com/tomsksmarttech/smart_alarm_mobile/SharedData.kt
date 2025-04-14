@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -40,6 +41,8 @@ object SharedData {
     var humidity = mutableDoubleStateOf(0.0)
     var temperature = mutableDoubleStateOf(0.0)
     var voc = mutableDoubleStateOf(0.0)
+
+        var isAlarmDialog = MutableStateFlow(false)
 //    val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
     var lastAudio: Audio? = null

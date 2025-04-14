@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -17,10 +18,15 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ALARM_TRIGGERED = "com.tomsksmarttech.ALARM_TRIGGERED"
         const val NOTIFICATION_CLICKED = "com.tomsksmarttech.NOTIFICATION_CLICKED"
     }
+    private val mqttService = MqttService
     private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d("RECEIVER", "recived: $intent")
         if (intent.action == ALARM_TRIGGERED) {
+
+            mqttService.init(context)
+
             handleAlarmTrigger(context, intent)
         } else if (intent.action == NOTIFICATION_CLICKED) {
             Log.d("AlarmReceiver", "NOTIFICATION_CLICKED")
@@ -30,6 +36,9 @@ class AlarmReceiver : BroadcastReceiver() {
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.cancel(0)
             notificationManager.cancel(1)
+        } else if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            // Восстанавливаем будильники из SharedPreferences
+            AlarmRepository.loadAlarms(context)
         }
     }
 
@@ -48,6 +57,9 @@ class AlarmReceiver : BroadcastReceiver() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     putExtra("notification_clicked", true)  // Добавляем специальный флаг
                 }
+
+                AlarmRepository.setPlayingAlarmId(AlarmRepository.alarms.value.last().id)
+
                 val fullScreenPendingIntent = PendingIntent.getActivity(
                     context,
                     0,
