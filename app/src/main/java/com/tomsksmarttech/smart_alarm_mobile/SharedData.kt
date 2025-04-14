@@ -37,6 +37,8 @@ object SharedData {
 
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
+//        private val _la = MutableStateFlow<List<Audio>>(emptyList())
+    val lastSongPath: MutableStateFlow<String?> = MutableStateFlow(null)
 
     var humidity = MutableStateFlow<Double>(0.0)
     var temperature = MutableStateFlow<Double>(0.0)

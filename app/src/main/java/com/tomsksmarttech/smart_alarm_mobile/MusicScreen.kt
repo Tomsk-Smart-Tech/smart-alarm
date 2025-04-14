@@ -67,9 +67,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastAudio
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.lastSongPath
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 
 import com.tomsksmarttech.smart_alarm_mobile.alarm.DialClockDialog
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -214,7 +221,7 @@ fun MusicLibrary(
         mutableStateOf(false)
     }
 //    val currentAlarmId by AlarmRepository.currentAlarmId.collectAsState()
-    val currAlarmId = AlarmRepository.currentAlarmId.collectAsState().value
+    var currAlarmId = AlarmRepository.currentAlarmId.collectAsState().value
     mediaPlayer.setOnCompletionListener {
         isPlaying = false
     }
@@ -326,7 +333,11 @@ fun MusicLibrary(
 //                                    Text("Воспроизвести")
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Button(onClick = { showDialog = true }) {
+                            Button(onClick = {
+                                showDialog = true
+                                lastAudio = audio
+                                Log.d("AUDIO", lastAudio.toString())
+                            }) {
                                 Icon(
                                     imageVector = Icons.Filled.AddCircle,
                                     contentDescription = "Create new alarm"
@@ -352,32 +363,48 @@ fun MusicLibrary(
                         }
                     }
                 }
-                lastAudio = audio
+//                lastAudio = audio
             }
         }
     }
     if (showDialog && currAlarmId == 0) {
+        Log.d("AUDIO","in dialog audio: ${lastAudio.toString()}")
         DialClockDialog(
             null,
-            onConfirm = { timePickerState ->
-                Log.d(
-                    "ALARM",
-                    "Creating new with id from music ${AlarmRepository.alarms.value.last()}"
-                )
-                Log.d("ALARM", "and list is music ${AlarmRepository.alarms.value}")
-                SingleAlarmManager.setAlarm(AlarmRepository.alarms.value.last().id)
-                Log.d("ALARM", "with id ${AlarmRepository.alarms.value.last().id}")
-                AlarmRepository.saveAlarms(httpController, coroutineScope)
-                showDialog = false
+            onConfirm = { newAlarm ->
+                // Запускаем корутину для асинхронной обработки
+                coroutineScope.launch {
+                    newAlarm.musicUri = lastAudio?.uri.toString()
+                    Log.d("ON_CONFIRM", newAlarm.toString())
+                    viewModel.addAlarm(newAlarm)
+                    AlarmRepository.saveAlarms(httpController, coroutineScope)
+
+                    // Ждем первого ненулевого значения (если текущее null)
+                    // или следующего изменения (если нужно именно изменение)
+                    lastSongPath
+                        .filter { it != null } // если нужно пропустить null
+                        .first() // берем первое значение после подписки
+
+                    // После получения значения обновляем alarm
+                    newAlarm.song = lastSongPath.value
+                    viewModel.removeAlarmById(newAlarm.id)
+                    viewModel.addAlarm(newAlarm)
+                    MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
+                    // Закрываем диалог в основном потоке
+                    withContext(Dispatchers.Main) {
+                        showDialog = false
+                    }
+                }
             },
             onDismiss = {
                 showDialog = false
             },
             viewModel
         )
-        val alarmsState by AlarmRepository.alarms.collectAsState()
-        val lastAlarm = alarmsState.lastOrNull()
-        Log.d("TEST", "set auio to ${lastAudio?.uri} : $lastAlarm")
+        Log.d("DIALOG CLOSED", AlarmRepository.alarms.collectAsState().toString())
+//        val alarmsState by AlarmRepository.alarms.collectAsState()
+//        val lastAlarm = alarmsState.lastOrNull()
+
     } else
         if (showDialog) {
         viewModel.cancelAlarm(currAlarmId)

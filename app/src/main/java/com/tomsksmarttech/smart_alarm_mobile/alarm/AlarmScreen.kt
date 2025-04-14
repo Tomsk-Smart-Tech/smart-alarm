@@ -77,6 +77,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity.Screens
 import com.tomsksmarttech.smart_alarm_mobile.R
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -615,7 +616,6 @@ fun DialClockDialog(
             is24Hour = true,
         )
         TimePickerDialog(
-
             onDismiss = { onDismiss() },
             onConfirm = {
                 val time = String.format("%02d:%02d", timePickerState.hour, timePickerState.minute)
@@ -626,7 +626,7 @@ fun DialClockDialog(
                     label = initialLabel,
                     isHaptic = false,
                     repeatDays = listOf(false,false,false,false,false,false,false),
-
+                    musicUri = SharedData.lastAudio?.uri.toString(),
                 )
                 Log.d("ALARM", "$newAlarm : ")
                 onConfirm(newAlarm)

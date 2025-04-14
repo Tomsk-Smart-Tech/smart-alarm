@@ -77,8 +77,10 @@ object AlarmRepository {
 
     fun removeAlarm(id: Int) {
         val updatedList = alarms.value.toMutableList()
-        updatedList.removeIf { it.id == id }
+        val removedAlarm = updatedList.find { it.id == id }
+        updatedList.remove(removedAlarm)
         _alarms.value = updatedList
+        if (removedAlarm != null) SingleAlarmManager.cancelAlarm(removedAlarm)
         sortAlarms()
         MqttService.addList(ALARMS_TOPIC, alarms.value)
     }

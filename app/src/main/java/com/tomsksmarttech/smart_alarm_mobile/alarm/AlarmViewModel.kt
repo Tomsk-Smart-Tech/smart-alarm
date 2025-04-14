@@ -79,6 +79,10 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
         repository.cancelAlarm(AlarmRepository.alarms.value.find{ it.id == id}!!)
     }
 
+    fun removeAlarmById(id: Int) {
+        repository.removeAlarm(id)
+    }
+
     fun generateNewAlarmId(): Int {
         return repository.currentAlarmIndex + 1
     }

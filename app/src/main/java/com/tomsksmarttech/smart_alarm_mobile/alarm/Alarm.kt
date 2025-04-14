@@ -10,7 +10,7 @@ data class Alarm(
     var repeatDays: List<Boolean> = listOf(false,false,false,false,false,false,false),
     var label: String,
     var musicUri: String? = null,
-    var musicName: String? = null,
+    var song: String? = null,
     var isSended: Boolean = false
 ) {
     fun getHours(): String {
