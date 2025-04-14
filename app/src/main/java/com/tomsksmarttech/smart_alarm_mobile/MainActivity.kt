@@ -3,6 +3,7 @@ package com.tomsksmarttech.smart_alarm_mobile
 import SingleAlarmManager
 import android.Manifest
 import android.app.ComponentCaller
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -50,6 +51,8 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
+import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver.Companion.NOTIFICATION_CLICKED
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmScreen
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmViewModel
@@ -57,6 +60,7 @@ import com.tomsksmarttech.smart_alarm_mobile.home.HomeScreen
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.AlarmObserver
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
+import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
 import kotlinx.coroutines.launch
 
@@ -65,7 +69,7 @@ lateinit var viewModel: AlarmViewModel
 class MainActivity : ComponentActivity() {
 
     val ao = AlarmObserver(this)
-
+    lateinit var spotifyPkceLogin: SpotifyPkceLogin
     val targetRoute by lazy {
 
         intent?.getStringExtra("TARGET_ROUTE")?.takeIf { it.isNotEmpty() }
@@ -75,7 +79,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d("SpotifyAuth", "onNewIntent called")
-        intent?.let {
+        intent.let {
             if (it.action == Intent.ACTION_VIEW && it.data != null) {
                 val redirectUri = getString(R.string.redirect_uri)
                 if (it.data.toString().startsWith(redirectUri)) {
@@ -126,10 +130,33 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         targetRoute
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
 
+        val alarmRepo: AlarmRepository = AlarmRepository
+        val viewModelHolder = ViewModelHolder(this)
+        viewModel = viewModelHolder.get("AlarmViewModel") {
+            AlarmViewModel(application, alarmRepo)
+        }
+
+        if (intent?.getBooleanExtra("notification_action_clicked", false) == true) {
+            Log.d("MainActivity", "Получен клик по телу уведомления")
+            val stopIntent = Intent(this, AlarmReceiver::class.java).apply {
+                action = NOTIFICATION_CLICKED
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                0,
+                stopIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            pendingIntent.send()
+        } else if (intent?.getBooleanExtra("notification_clicked", false) == false) {
+            viewModel.init()
+        }
+//        MediaManager.stopMediaPlayback()
         MqttService.init(this)
+        SingleAlarmManager.init(this)
 
         MqttService.connect()
         spotifyPkceLogin = SpotifyPkceLogin()
@@ -159,12 +186,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
-        val alarmRepo: AlarmRepository = AlarmRepository
-        val viewModelHolder = ViewModelHolder(this)
-        viewModel = viewModelHolder.get("AlarmViewModel") {
-            AlarmViewModel(application, alarmRepo)
-        }
+//
+//        val alarmRepo: AlarmRepository = AlarmRepository
+//        val viewModelHolder = ViewModelHolder(this)
+//        viewModel = viewModelHolder.get("AlarmViewModel") {
+//            AlarmViewModel(application, alarmRepo)
+//        }
         val httpController = HttpController(this)
         viewModel.initHttpController(httpController)
 

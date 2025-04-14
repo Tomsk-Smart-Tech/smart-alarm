@@ -1,36 +1,15 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
-
-import android.R.attr.action
-import android.app.ForegroundServiceStartNotAllowedException
-import android.app.KeyguardManager
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Context.POWER_SERVICE
 import android.content.Intent
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.media.RingtoneManager
-import android.media.RingtoneManager.getDefaultUri
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
-import androidx.work.Constraints
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
 import com.tomsksmarttech.smart_alarm_mobile.R
-import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmForegroundService
 
 class AlarmReceiver : BroadcastReceiver() {
 

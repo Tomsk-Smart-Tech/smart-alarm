@@ -12,9 +12,10 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
 
     val repository: AlarmRepository = AlarmRepository
     val alarms = repository.alarms
+    val app = application
 
-    init {
-        repository.loadAlarms(application)
+    fun init() {
+        repository.loadAlarms(app)
     }
 
     fun addAlarm(alarm: Alarm) {

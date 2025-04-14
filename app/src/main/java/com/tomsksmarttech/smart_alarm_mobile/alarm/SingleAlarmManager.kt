@@ -18,6 +18,7 @@ import androidx.core.app.AlarmManagerCompat.setAlarmClock
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
 import androidx.work.*
+import java.time.DayOfWeek
 
 object SingleAlarmManager {
     private var systemAlarmManager: SystemAlarmManager? = null
@@ -43,7 +44,6 @@ object SingleAlarmManager {
                 }
             }
         }
-
     }
 
     fun requestExactAlarmPermission(context: Context) {
@@ -110,7 +110,7 @@ object SingleAlarmManager {
         if (currAlarm.repeatDays.find{ it == true } != null) {
             scheduleAlarm(currAlarm)
         } else {
-            scheduleAlarmForDay(currAlarm, Calendar.SUNDAY) //todo срочно исправить
+            scheduleAlarmForDay(currAlarm, Calendar.getInstance().get(Calendar.DAY_OF_WEEK))
         }
     }
 
@@ -150,22 +150,36 @@ object SingleAlarmManager {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            systemAlarmManager!!.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                pendingIntent)
-        } else {
-            systemAlarmManager!!.setExact(
-                AlarmManager.RTC_WAKEUP,
-                calendar.timeInMillis,
-                pendingIntent)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                Log.d("TEST", "set exact and allow")
+//            systemAlarmManager!!.set(
+//                AlarmManager.RTC_WAKEUP,
+//                calendar.timeInMillis,
+//                pendingIntent)
+//            Log.d("TEST", e.message.toString())
+//            try {
+                systemAlarmManager!!.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent)
+//            } catch (e: Exception) {
+//
+//            }
+            } else {
+                Log.d("TEST", "set exact")
+                systemAlarmManager!!.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent)
+            }
+        } catch (e: Exception) {
+            systemAlarmManager?.set(
+            SystemAlarmManager.RTC_WAKEUP,
+            calendar.timeInMillis,
+            pendingIntent
+            )
         }
-//        systemAlarmManager?.set(
-//            SystemAlarmManager.RTC_WAKEUP,
-//            calendar.timeInMillis,
-//            pendingIntent
-//        )
     }
 
     fun cancelAlarm(alarm: Alarm) {
