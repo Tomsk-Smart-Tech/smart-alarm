@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">My Alarm</string>
     <string name="title_music">Music Library</string>
-    <string name="create_new_alarm">Create new alarm</string>
+    <string name="create_new_alarm">New alarm</string>
     <string name="music_noname">Untitled - Unknown</string>
     <string name="new_alarm">New alarm</string>
     <string name="home">Home</string>
