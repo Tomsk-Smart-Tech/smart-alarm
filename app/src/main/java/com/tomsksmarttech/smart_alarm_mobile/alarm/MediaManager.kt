@@ -23,6 +23,7 @@ object MediaManager {
                         .build()
                 )
                 try {
+                    Log.d("URI", uri.toString())
                     setDataSource(context, if (uri != null) uri else defaultUri)
                 } catch (e: Exception) {
                     setDataSource(context, defaultUri)

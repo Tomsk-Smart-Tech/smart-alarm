@@ -245,10 +245,12 @@ fun AlarmItem(
                 checked = isEnabled,
                 onCheckedChange = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    isEnabled = it
                     Log.d("ALARM", "$alarm")
                     onAlarmChange
+                    isEnabled = !isEnabled
+                    alarm.isEnabled = isEnabled
                     if (isEnabled) {
+//                        alarm.isEnabled = checked
                         viewModel.setAlarm(alarm.id)
                     } else {
                         viewModel.cancelAlarm(alarm)

@@ -79,9 +79,9 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup" />
         </provider>
-        <service android:name=".alarm.MqttCheckService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+<!--        <service android:name=".alarm.MqttCheckService"-->
+<!--            android:exported="false"-->
+<!--            android:foregroundServiceType="dataSync" />-->
     </application>
 
 </manifest>

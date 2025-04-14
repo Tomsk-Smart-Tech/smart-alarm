@@ -38,9 +38,9 @@ object SharedData {
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
 
-    var humidity = mutableDoubleStateOf(0.0)
-    var temperature = mutableDoubleStateOf(0.0)
-    var voc = mutableDoubleStateOf(0.0)
+    var humidity = MutableStateFlow<Double>(0.0)
+    var temperature = MutableStateFlow<Double>(0.0)
+    var voc = MutableStateFlow<Double>(0.0)
 
         var isAlarmDialog = MutableStateFlow(false)
 //    val currentAlarmId: StateFlow<Int> = _currentAlarmId

@@ -158,7 +158,7 @@ object SingleAlarmManager {
                 alarm.musicUri = getDefaultAlarmRingtoneUri().toString()
             }
             Log.d("TEST", "SENDING " + alarm.musicUri.toString())
-            putExtra("RINGTONE_URI", alarm.musicUri)
+            putExtra("ringtone_uri", alarm.musicUri)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

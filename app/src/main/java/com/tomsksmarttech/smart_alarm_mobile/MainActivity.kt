@@ -178,8 +178,9 @@ class MainActivity : ComponentActivity() {
 //            }
         } else if (intent?.getBooleanExtra("notification_clicked", false) == false) {
             viewModel.init()
+        } else {
+            SharedData.isAlarmDialog.value = true
         }
-//        MediaManager.stopMediaPlayback()
         MqttService.init(this)
         SingleAlarmManager.init(this)
 

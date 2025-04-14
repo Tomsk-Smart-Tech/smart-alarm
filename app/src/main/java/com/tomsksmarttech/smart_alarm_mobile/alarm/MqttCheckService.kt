@@ -1,6 +1,7 @@
 package com.tomsksmarttech.smart_alarm_mobile.alarm
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
@@ -14,7 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
-class MqttCheckService : Service(), MqttObserver {
+class MqttCheckService(val context: Context) : MqttObserver {
     var isMsgReceived = false
     private var checkCallback: ((Boolean) -> Unit)? = null
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -22,8 +23,8 @@ class MqttCheckService : Service(), MqttObserver {
     fun checkMqtt(callback: (Boolean) -> Unit) {
         checkCallback = callback
         if (MqttService.connectionState.value == -1) {
+            MqttService.init(context)
             MqttService.connectionState.value = 0
-            MqttService.init(this)
         }
         MqttService.subscribe(CHECK_TOPIC)
         MqttService.addObserver(this)
@@ -51,5 +52,4 @@ class MqttCheckService : Service(), MqttObserver {
             checkCallback = null
         }
     }
-    override fun onBind(intent: Intent): IBinder? = null
 }

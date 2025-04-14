@@ -67,10 +67,17 @@ object MqttService {
                 if (throwable != null) {
                     connectionState.value = -1
                     Log.e("MqttService", "Ошибка подключения: ${throwable.message}")
+                    if (throwable.message?.contains("connecting") == true) {
+                        Log.d("MQTT", "connecting...")
+                        connectionState.value = 0
+                    }
                 } else {
                     isConnected = true
                     connectionState.value = 1
                     Log.i("MqttService", "Успешное подключение к брокеру")
+                    subscribedTopics.forEach{
+                        subscribe(it)
+                    }
                 }
             }
     }

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.tomsksmarttech.smart_alarm_mobile.CHECK_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
@@ -26,6 +27,7 @@ class AlarmReceiver : BroadcastReceiver() {
         if (intent.action == ALARM_TRIGGERED) {
 
             mqttService.init(context)
+            mqttService.subscribedTopics.add(CHECK_TOPIC)
 
             handleAlarmTrigger(context, intent)
         } else if (intent.action == NOTIFICATION_CLICKED) {
@@ -43,7 +45,7 @@ class AlarmReceiver : BroadcastReceiver() {
     }
 
     private fun handleAlarmTrigger(context: Context, intent: Intent) {
-        val mqttCheckService = MqttCheckService()
+        val mqttCheckService = MqttCheckService(context)
         mqttCheckService.checkMqtt { isSuccess ->
             // callback будет вызван когда:
             // - пришло сообщение (isSuccess = true)
@@ -57,7 +59,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     putExtra("notification_clicked", true)  // Добавляем специальный флаг
                 }
-
+                AlarmRepository.loadAlarms(context)
                 AlarmRepository.setPlayingAlarmId(AlarmRepository.alarms.value.last().id)
 
                 val fullScreenPendingIntent = PendingIntent.getActivity(
@@ -101,6 +103,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 notificationManager.notify(1, notification)
 
                 val ringtoneUri = intent.getStringExtra("ringtone_uri") ?: ""
+                Log.d("RECEIVER", "uri: ${ringtoneUri}")
 //                playRingtone(ringtoneUri, context)
                 MediaManager.playRingtone(ringtoneUri, context)
                 val isPhoneLocked = intent.getStringExtra("is_phone_locked")

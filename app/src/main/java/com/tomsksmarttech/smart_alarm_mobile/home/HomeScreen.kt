@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat.startActivity
@@ -67,8 +69,10 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import kotlinx.coroutines.launch
 import java.util.Date
 import androidx.core.net.toUri
+import com.tomsksmarttech.smart_alarm_mobile.ALARMS_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.HttpController
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
+import com.tomsksmarttech.smart_alarm_mobile.alarm.MediaManager
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.viewModel
 import kotlinx.coroutines.coroutineScope
@@ -81,11 +85,12 @@ fun HomeScreen(navController: NavController? = null) {
     val coroutineScope = rememberCoroutineScope()
     var isConnected = MqttService.connectionState.collectAsState()
 
-    var temperature by remember { SharedData.temperature }
-    var humidity by remember { SharedData.humidity }
+    var temperature = SharedData.temperature.collectAsState()
+    var humidity = SharedData.humidity.collectAsState()
     val activity = LocalContext.current as? Activity
-    var voc by remember { SharedData.voc }
+    var voc = SharedData.voc.collectAsState()
     var isAlarmDialog = SharedData.isAlarmDialog.collectAsState()
+    var counter by remember { mutableIntStateOf(0) }
 
     val permission = android.Manifest.permission.READ_CALENDAR
     var isPermissionGranted by remember {
@@ -133,6 +138,9 @@ fun HomeScreen(navController: NavController? = null) {
                     MqttService.connect()
                     Log.d("EVENTS", "connected in sf")
                     MqttService.subscribe(SENSORS_TOPIC)
+                    MqttService.subscribedTopics.add(SENSORS_TOPIC)
+                    MqttService.subscribedTopics.add(ALARMS_TOPIC)
+                    MqttService.subscribe(ALARMS_TOPIC)
                     MqttService.addMsg(TEST_TOPIC, "Hello, I'm ESP32 ^_^")
 //                    MqttService.addMsg("mqtt/alarms", "Hello alarms, I'm ESP32 ^_^")
                     if (isConnected.value == 1) {
@@ -175,10 +183,12 @@ fun HomeScreen(navController: NavController? = null) {
             )
         },
         Setting(stringResource(R.string.about_device)) {
+
             val browserIntent = Intent(
                 Intent.ACTION_VIEW,
                 context.getString(R.string.index).toUri()
             )
+
             startActivity(context, browserIntent, null)
         },
         Setting("Импортировать календарь") {
@@ -244,10 +254,7 @@ fun HomeScreen(navController: NavController? = null) {
                             painter = painterResource(R.drawable.kumquat),
                             contentDescription = "Our alarm",
                             Modifier.padding(20.dp).clickable{
-                                Toast.makeText(
-                                        context,
-                                context.getString(R.string.kumquat),
-                                Toast.LENGTH_SHORT).show()
+                                counter++
                             }
                         )
                         Spacer(
@@ -278,7 +285,7 @@ fun HomeScreen(navController: NavController? = null) {
                                     modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
-                                    "${temperature}°C",
+                                    "${temperature.value}°C",
                                     fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -290,7 +297,7 @@ fun HomeScreen(navController: NavController? = null) {
                                     modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
-                                    "${humidity}%",
+                                    "${humidity.value}%",
                                     fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -302,7 +309,7 @@ fun HomeScreen(navController: NavController? = null) {
                                     modifier = Modifier.scale(1.4f)
                                 )
                                 Text(
-                                    "${voc}",
+                                    "${voc.value}",
                                     fontSize = 27.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -361,12 +368,20 @@ fun HomeScreen(navController: NavController? = null) {
             }
         }
     }
+    if (counter > 6) {
+        counter = 0
+        Toast.makeText(
+            context,
+            context.getString(R.string.kumquat),
+            Toast.LENGTH_SHORT).show()
+    }
     if (isAlarmDialog.value) {
         AlarmCancelDialog( onCancel = {
             SharedData.isAlarmDialog.value = false
             val currAlarm = viewModel.alarms.value.find {
                 it.id == AlarmRepository.playingAlarmId.value
             }
+            MediaManager.stopMediaPlayback()
             if (currAlarm != null) {
                 currAlarm.isEnabled = false
                 if (currAlarm.repeatDays.find {it == true } == false) {
@@ -380,6 +395,7 @@ fun HomeScreen(navController: NavController? = null) {
     }
 }
 
+//@Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmCancelDialog(
@@ -395,20 +411,24 @@ fun AlarmCancelDialog(
             onCancel()
         }
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(
-                modifier = Modifier.padding(2.dp),
-                onClick = {
-                    onCancel()
-                },
-            ) {
-                Text(stringResource(R.string.btn_cancel))
+        Column {
+            Row {
+                Text(text = "Устройство не подключено, сработал будильник на телефоне. Обеспечьте стабильную работу сети и подключите Умный будильник")
             }
-            Spacer(modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    modifier = Modifier.padding(2.dp),
+                    onClick = {
+                        onCancel()
+                    },
+                ) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+                Spacer(modifier = Modifier.weight(1f))
 //            Button(
 //                modifier = Modifier.padding(2.dp),
 //                onClick = {
@@ -419,6 +439,7 @@ fun AlarmCancelDialog(
 //            ) {
 //                Text(stringResource(R.string.btn_confirm))
 //            }
+            }
         }
     }
 }
