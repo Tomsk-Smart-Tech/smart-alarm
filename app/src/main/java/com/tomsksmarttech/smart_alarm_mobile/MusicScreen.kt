@@ -15,6 +15,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -277,7 +280,7 @@ fun MusicLibrary(
                                 audio.name,
                                 textAlign = TextAlign.Left,
                                 modifier = Modifier
-                                    .widthIn(min = 100.dp, max = 200.dp)
+                                    .weight(5f)
                                     .basicMarquee(),
 //                            overflow = TextOverflow.Ellipsis,
                                 maxLines = 1,
@@ -293,6 +296,7 @@ fun MusicLibrary(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                                 maxLines = 1,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                         Row(
@@ -340,8 +344,9 @@ fun MusicLibrary(
                             }) {
                                 Icon(
                                     imageVector = Icons.Filled.AddCircle,
-                                    contentDescription = "Create new alarm"
+                                    contentDescription = "Create new alarm",
                                 )
+                                Spacer(modifier = Modifier.width(10.dp))
 //                            TODO()
 //                                val existingAlarmId = AlarmRepository.alarms.collectAsState().value.find { it.id == currentAlarmId }?.id
 //                                Log.d("MUSIC", "last alarm: ${sortedAlarms.last().time}")
@@ -351,12 +356,14 @@ fun MusicLibrary(
                                 if (currAlarmId == 0) {
                                     Text(
                                         stringResource(R.string.create_new_alarm),
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        maxLines = 1
                                     )
                                 } else {
                                     Text(
                                         "Выбрать этот трек",
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        maxLines = 1
                                     )
                                 }
                             }

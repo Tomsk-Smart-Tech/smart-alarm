@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Мой будильник</string>
     <string name="title_music">Библиотека музыки</string>
-    <string name="create_new_alarm">Создать новый будильник</string>
+    <string name="create_new_alarm">Новый будильник</string>
     <string name="music_noname">Без названия - Неизвестен</string>
     <string name="new_alarm">Новый будильник</string>
     <string name="home">Главная</string>

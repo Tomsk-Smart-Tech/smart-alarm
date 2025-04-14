@@ -236,11 +236,6 @@ fun HomeScreen(navController: NavController? = null) {
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-        )
         LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
             items(settingsList) { setting ->
                 if (setting.name == "Smart alarm") {
@@ -270,7 +265,7 @@ fun HomeScreen(navController: NavController? = null) {
                                 )
                                 .fillMaxWidth()
                                 .wrapContentHeight()
-                                .padding(horizontal = 0.dp, vertical = 20.dp),
+                                .padding(horizontal = 10.dp, vertical = 10.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Row(
