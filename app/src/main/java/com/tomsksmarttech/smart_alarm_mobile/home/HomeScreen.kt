@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.icu.text.SimpleDateFormat
 import android.net.Uri
+import android.provider.Settings
+import android.provider.Settings.canDrawOverlays
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -28,6 +30,8 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +39,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -76,6 +81,7 @@ import com.tomsksmarttech.smart_alarm_mobile.alarm.MediaManager
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.viewModel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 @Composable
@@ -218,7 +224,7 @@ fun HomeScreen(navController: NavController? = null) {
                                 Toast.LENGTH_LONG
                             ).show()
                         }
-                        Log.d("ALARM", "is connected: $isConnected")
+                        Log.d("ALARM", "is connected: ${isConnected.value}")
                     } catch (e: Exception) {
                         Toast.makeText(
                             context,
@@ -234,6 +240,8 @@ fun HomeScreen(navController: NavController? = null) {
         },
 //        Setting(stringResource(R.string.about_device), SettingsFunctions()::about),
     )
+
+    OverlayPermissionCheck()
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         LazyColumn(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -390,6 +398,52 @@ fun HomeScreen(navController: NavController? = null) {
     }
 }
 
+@Composable
+fun OverlayPermissionCheck() {
+    val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!canDrawOverlays(context)) {
+            showDialog = true
+        } else {
+            SharedData.isAlarmManagerShouldWork.value = true
+            showDialog = false
+            Log.d("OverlayPermission", "Permission already granted")
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Требуется разрешение") },
+            text = { Text("Для работы будильников на смартфоне нужно разрешение на отображение поверх других окон") },
+            confirmButton = {
+                Button(onClick = {
+                    context.startActivity(
+                        requestOverlayPermissionIntent(context)
+                    )
+                    showDialog = false
+                }) {
+                    Text("Перейти в настройки")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDialog = false }) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+}
+
+fun requestOverlayPermissionIntent(context: Context): Intent {
+    return Intent(
+        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+        Uri.parse("package:${context.packageName}")
+    )
+}
+
 //@Preview
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -406,8 +460,14 @@ fun AlarmCancelDialog(
             onCancel()
         }
     ) {
-        Column {
-            Row {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+
+            ) {
                 Text(text = "Устройство не подключено, сработал будильник на телефоне. Обеспечьте стабильную работу сети и подключите Умный будильник")
             }
             Row(
@@ -421,7 +481,7 @@ fun AlarmCancelDialog(
                         onCancel()
                     },
                 ) {
-                    Text(stringResource(R.string.btn_cancel))
+                    Text(stringResource(R.string.btn_off))
                 }
                 Spacer(modifier = Modifier.weight(1f))
 //            Button(

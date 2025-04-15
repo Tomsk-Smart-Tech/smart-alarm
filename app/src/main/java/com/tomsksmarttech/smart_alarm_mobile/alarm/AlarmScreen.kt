@@ -75,9 +75,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import com.tomsksmarttech.smart_alarm_mobile.ALARMS_TOPIC
 import com.tomsksmarttech.smart_alarm_mobile.MainActivity.Screens
 import com.tomsksmarttech.smart_alarm_mobile.R
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -390,6 +392,7 @@ fun AlarmItem(
                 // всё равно должен вызвать
 //                MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
                 Log.d("SEND", "I WANT TO SEND ${viewModel.alarms.value}")
+                MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
             }, onDismiss = { isLabelChanged = false })
         }
         if (isDaysDialog) {
@@ -397,7 +400,10 @@ fun AlarmItem(
                 onConfirm = {
                     alarm.isSended = false
                     isDaysDialog = false
-//                    MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
+                    viewModel.removeAlarmById(alarm.id)
+                    viewModel.addAlarm(alarm)
+                    MqttService.addList(ALARMS_TOPIC, viewModel.alarms.value)
+
                     Log.d("SEND", "I WANT TO SEND ${viewModel.alarms.value}")
                             },
 

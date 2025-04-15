@@ -4,6 +4,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.tomsksmarttech.smart_alarm_mobile.HttpController
+import com.tomsksmarttech.smart_alarm_mobile.SharedData
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadSensorsData
 import kotlinx.coroutines.CoroutineScope
 
 
@@ -16,12 +18,20 @@ class AlarmViewModel(application: Application, repository: AlarmRepository) : An
 
     fun init() {
         repository.loadAlarms(app)
+        //todo переместить
+        val sd = loadSensorsData(app)
+        if (sd != null ) {
+            SharedData.humidity.value = sd.humidity
+            SharedData.temperature.value = sd.temperature
+            SharedData.voc.value = sd.voc
+        }
     }
 
     fun addAlarm(alarm: Alarm) {
         val newList = alarms.value.toMutableList()
         newList.add(alarm)
         repository.updateAlarms(newList)
+        cancelAlarm(alarm.id)
         setAlarm(alarm.id)
         Log.d("ALARM", "save ringtones")
 

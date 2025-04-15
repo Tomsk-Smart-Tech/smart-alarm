@@ -38,8 +38,8 @@ object SingleAlarmManager {
             workManager = WorkManager.getInstance(appContext)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (!systemAlarmManager!!.canScheduleExactAlarms()) {
-                    // Разрешения нет - нужно запросить у пользователя
-                    requestExactAlarmPermission(context) // Ваша функция для запроса
+                    // нужно запросить у пользователя
+                    requestExactAlarmPermission(context)
                     return // Не планируем будильник без разрешения
                 }
             }
@@ -92,7 +92,9 @@ object SingleAlarmManager {
         val hoursText = resources.getQuantityString(R.plurals.hours, diffHours, diffHours)
         val minutesText = resources.getQuantityString(R.plurals.minutes, diffMinutes, diffMinutes)
 
-        var message = if (diffHours == 0) {
+        var message = if (diffHours == 0 && diffMinutes == 0) {
+            "Будильник сработает менее чем через минуту"
+        } else if (diffHours == 0) {
             "Будильник сработает через $minutesText"
         } else if (diffMinutes == 0) {
             "Будильник сработает через $hoursText"
@@ -104,7 +106,8 @@ object SingleAlarmManager {
         Log.d("TEST", "Alarm set for: ${calendar.time}")
         Log.d("TEST", "Alarm time: ${currAlarm.getHours()}, ${currAlarm.getMinutes()}")
 
-        currAlarm.musicUri = SharedData.lastAudio?.uri.toString()
+        if (!SharedData.isAlarmManagerShouldWork.value) return;
+//        currAlarm.musicUri = SharedData.lastAudio?.uri.toString()
 
         // протестировать
         if (currAlarm.repeatDays.find{ it == true } != null) {

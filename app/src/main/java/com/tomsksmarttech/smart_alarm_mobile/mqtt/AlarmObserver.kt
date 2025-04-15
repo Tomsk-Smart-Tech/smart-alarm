@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.tomsksmarttech.smart_alarm_mobile.SharedData
 import com.tomsksmarttech.smart_alarm_mobile.alarm.Alarm
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
+import kotlin.math.floor
 
 class AlarmObserver(val context: Context) : MqttObserver {
 
@@ -23,8 +24,8 @@ class AlarmObserver(val context: Context) : MqttObserver {
                 val receivedData = msg.split(" ").map { it.toDouble() }
                 Log.d("RECEIVE", receivedData.toString())
                 SharedData.temperature.value = receivedData[0]
-                SharedData.humidity.value = receivedData[1]
-                SharedData.voc.value = receivedData[2]
+                SharedData.humidity.value = floor(receivedData[1])
+                SharedData.voc.value = floor(receivedData[2])
 
 //                Log.d("ONNOTIFY", "received: $msg")
             }

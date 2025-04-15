@@ -30,29 +30,22 @@ const val CHECK_TOPIC = "mqtt/check"
 
     // todo избавиться от SharedData
 object SharedData {
-
+        var humidity = MutableStateFlow<Double>(0.0)
+        var temperature = MutableStateFlow<Double>(0.0)
+        var voc = MutableStateFlow<Double>(0.0)
     private val _loadMusicJob = MutableStateFlow<Job?>(null)
     val loadMusicJob: StateFlow<Job?> = _loadMusicJob
 
 
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
-//        private val _la = MutableStateFlow<List<Audio>>(emptyList())
     val lastSongPath: MutableStateFlow<String?> = MutableStateFlow(null)
+        var isAlarmManagerShouldWork = MutableStateFlow(false)
 
-    var humidity = MutableStateFlow<Double>(0.0)
-    var temperature = MutableStateFlow<Double>(0.0)
-    var voc = MutableStateFlow<Double>(0.0)
 
         var isAlarmDialog = MutableStateFlow(false)
-//    val currentAlarmId: StateFlow<Int> = _currentAlarmId
 
     var lastAudio: Audio? = null
-//    val alarms = MutableStateFlow(
-//        mutableListOf<Alarm?>()
-//
-//    )
-
     var currentAuthorizationCode : String? = null
     var codeVerifier : String? = null
 
@@ -161,6 +154,7 @@ object SharedData {
         }
     }
 
+        //todo видимо убрать
     fun loadAlarms(context: Context): Collection<Alarm> {
         val gson = Gson()
         val sharedPreferences =
@@ -178,4 +172,33 @@ object SharedData {
         sharedPreferences.edit().putString("alarm_data", jsonString).apply()
     }
 
+        fun saveSensorsData(context: Context) {
+            val sensorsData = SensorsData(
+                humidity = humidity.value,
+                temperature = temperature.value,
+                voc = voc.value
+            )
+            if ((voc.value + temperature.value + humidity.value ) < 1.0) {
+                return
+            }
+
+            val gson = Gson()
+            val sharedPreferences =
+                context.getSharedPreferences("shared_preferences", Context.MODE_PRIVATE)
+            val jsonString = gson.toJson(sensorsData)
+            sharedPreferences.edit().putString("sensors_data", jsonString).apply()
+        }
+
+        fun loadSensorsData(context: Context): SensorsData? {
+            val sharedPreferences =
+                context.getSharedPreferences("shared_preferences", Context.MODE_PRIVATE)
+            val jsonString = sharedPreferences.getString("sensors_data", null)
+
+            return if (jsonString != null) {
+                val gson = Gson()
+                gson.fromJson(jsonString, SensorsData::class.java)
+            } else {
+                null
+            }
+        }
 }

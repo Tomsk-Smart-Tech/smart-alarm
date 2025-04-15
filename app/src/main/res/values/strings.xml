@@ -34,6 +34,7 @@
     <string name="alarm_stop_text">Stop</string>
     <string name="index" translatable="false">http://77.221.137.36:8080/</string>
     <string name="kumquat">Kumquat!</string>
+    <string name="btn_off">turn off</string>
     <plurals name="hours">
         <item quantity="one">%d hour</item>
         <item quantity="few">%d hour</item>

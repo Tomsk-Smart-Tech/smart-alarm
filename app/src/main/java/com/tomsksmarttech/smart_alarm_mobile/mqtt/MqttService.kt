@@ -98,18 +98,23 @@ object MqttService {
                 .whenComplete { _, throwable ->
                     if (throwable != null) {
                         Log.e("MqttService", "Ошибка публикации: ${throwable.message}")
+                        client.reauth()
+                        connect()
+                        client.reauth()
                     } else {
                         Log.i("MqttService", "Сообщение отправлено в $topic: $message")
                     }
                 }
         } catch (e: Exception) {
             Log.e("ERROR", e.message.toString())
+            client.reauth()
         }
     }
 
     fun subscribe(topic: String) {
         if (!isConnected) {
             Log.e("MqttService", "Попытка подписки без подключения!")
+            connect()
             return
         }
 
@@ -131,6 +136,14 @@ object MqttService {
             .whenComplete { _, throwable ->
                 if (throwable != null) {
                     Log.e("MqttService", "Ошибка подписки: ${throwable.message}")
+                    if (throwable.message?.contains("closed") == true) {
+                        Log.d("MQTT", "closed...")
+                        connectionState.value = 0
+                        client.reauth()
+                        connect()
+                        //intent
+                    }
+                    client.reauth()
                 } else {
                     subscribedTopics.add(topic)
                     Log.i("MqttService", "Подписались на топик: $topic")

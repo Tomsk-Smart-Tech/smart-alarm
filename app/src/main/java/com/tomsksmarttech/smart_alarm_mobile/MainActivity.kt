@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.provider.Settings.canDrawOverlays
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,15 +42,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
@@ -64,6 +69,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadAlarms
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadSensorsData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver.Companion.NOTIFICATION_CLICKED
@@ -76,7 +83,10 @@ import com.tomsksmarttech.smart_alarm_mobile.mqtt.MqttService
 import com.tomsksmarttech.smart_alarm_mobile.playback.PlaybackControlScreen
 import com.tomsksmarttech.smart_alarm_mobile.spotify.SpotifyPkceLogin
 import com.tomsksmarttech.smart_alarm_mobile.ui.theme.SmartalarmmobileTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 const val durationMillis = 600
 lateinit var viewModel: AlarmViewModel
@@ -113,6 +123,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        runBlocking{ MqttService.init(application) }
         handleIntentIfNeeded(intent)
     }
 
@@ -196,6 +207,7 @@ class MainActivity : ComponentActivity() {
         }
 
         MqttService.initCoroutineScope(lifecycleScope)
+
         lifecycleScope.launch {
             MqttService.connect()
             MqttService.deque.collect { deque ->  // COLLECT ОБРАБАТЫВАЕТ ВСЕ ЭЛЕМЕНТЫ
@@ -239,7 +251,6 @@ class MainActivity : ComponentActivity() {
 //                if (duration.isNegative) duration.plusDays(1).seconds else duration.seconds
 //            }
 //        }
-
 //        MqttService.addList("mqtt/alarms", pendingAlarms.toList())
 //        SingleAlarmManager.init(this)
     }
@@ -255,19 +266,26 @@ class MainActivity : ComponentActivity() {
 //        WorkManager.getInstance(this).enqueue(saveWorkRequest)
 //    }
 
+
+
     class SaveAlarmsWorker(appContext: Context, workerParams: WorkerParameters) :
         Worker(appContext, workerParams) {
 
         override fun doWork(): Result {
-            val alarms = AlarmRepository.alarms.value
-            SharedData.saveAlarms(applicationContext, alarms)
-            Log.d("ALARMS", "Будильники сохранены через WorkManager")
-//            repeat(SharedData.getMsgDequeLen()) {
-//                val mqttPair = SharedData.getMsg()
-//                MqttService.publish(mqttPair.first, mqttPair.second)
-//            }
-//            Log.d("MQTT", "Отправлено сообщений через WorkManager")
-            return Result.success()
+            try {
+                // Сохраняем будильники
+                val alarms = AlarmRepository.alarms.value
+                SharedData.saveAlarms(applicationContext, alarms)
+
+                // Сохраняем данные сенсоров
+                SharedData.saveSensorsData(applicationContext)
+
+                Log.d("SAVE_WORKER", "Данные успешно сохранены")
+                return Result.success()
+            } catch (e: Exception) {
+                Log.e("SAVE_WORKER", "Ошибка при сохранении данных", e)
+                return Result.failure()
+            }
         }
     }
 
