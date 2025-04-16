@@ -93,8 +93,8 @@ fun HomeScreen(navController: NavController? = null) {
 
     var temperature = SharedData.temperature.collectAsState()
     var humidity = SharedData.humidity.collectAsState()
-    val activity = LocalContext.current as? Activity
     var voc = SharedData.voc.collectAsState()
+    val activity = LocalContext.current as? Activity
     var isAlarmDialog = SharedData.isAlarmDialog.collectAsState()
     var counter by remember { mutableIntStateOf(0) }
 

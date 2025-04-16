@@ -80,7 +80,9 @@ class HttpController(val context: Context) {
 
                 override fun onResponse(call: Call, response: Response) {
                     val resp = response.body?.string()?.split("айл сохранён: ")?.map{ it.trim()}
-                    SharedData.lastSongPath.value = resp?.get(1) ?: ""
+                    if (resp != null) {
+                        if (resp.size > 1) SharedData.lastSongPath.value = resp[1]
+                    }
                     Log.d(
                         "Uploading file",
                         "Файл $fileName успешно загружен: ${resp}"

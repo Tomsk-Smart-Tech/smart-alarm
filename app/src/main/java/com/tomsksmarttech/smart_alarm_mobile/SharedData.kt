@@ -36,12 +36,10 @@ object SharedData {
     private val _loadMusicJob = MutableStateFlow<Job?>(null)
     val loadMusicJob: StateFlow<Job?> = _loadMusicJob
 
-
     private val _musicList = MutableStateFlow<List<Audio>>(emptyList())
     val musicList: StateFlow<List<Audio>> = _musicList
     val lastSongPath: MutableStateFlow<String?> = MutableStateFlow(null)
         var isAlarmManagerShouldWork = MutableStateFlow(false)
-
 
         var isAlarmDialog = MutableStateFlow(false)
 

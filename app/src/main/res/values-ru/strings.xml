@@ -35,6 +35,7 @@
     <string name="alarm_stop_text">Остановить</string>
     <string name="kumquat">Кумкват!</string>
     <string name="btn_off">Выключить</string>
+    <string name="widget_sensors">Показания датчиков</string>
     <plurals name="hours">
         <item quantity="one">%d час</item>
         <item quantity="few">%d часа</item>

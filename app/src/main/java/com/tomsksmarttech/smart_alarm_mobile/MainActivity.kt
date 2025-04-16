@@ -69,9 +69,12 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.humidity
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadAlarms
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.loadSensorsData
 import com.tomsksmarttech.smart_alarm_mobile.SharedData.musicList
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.temperature
+import com.tomsksmarttech.smart_alarm_mobile.SharedData.voc
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmReceiver.Companion.NOTIFICATION_CLICKED
 import com.tomsksmarttech.smart_alarm_mobile.alarm.AlarmRepository
@@ -101,8 +104,19 @@ class MainActivity : ComponentActivity() {
             ?: Screens.Home.route
     }
 
+    fun updateData(newData: SensorsData) {
+        MqttService.init(application)
+        MqttService.subscribedTopics.add(SENSORS_TOPIC)
+        humidity.value = newData.humidity
+        temperature.value = newData.temperature
+        voc.value = newData.voc
+        // Принудительно обновляем виджет
+        SensorWidget.forceUpdate(application) // Нужно передать Context
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        AlarmRepository.updateCurrAlarmIndex()
         Log.d("SpotifyAuth", "onNewIntent called")
         intent.let {
             if (it.action == Intent.ACTION_VIEW && it.data != null) {
@@ -158,6 +172,8 @@ class MainActivity : ComponentActivity() {
         viewModel = viewModelHolder.get("AlarmViewModel") {
             AlarmViewModel(application, alarmRepo)
         }
+        viewModel.updateCurrAlarmIndex()
+        viewModel.generateNewAlarmId()
         val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val isIgnoringBatteryOptimizations = powerManager.isIgnoringBatteryOptimizations(packageName)

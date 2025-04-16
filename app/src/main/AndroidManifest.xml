@@ -41,7 +41,6 @@
             android:theme="@style/Theme.Smartalarmmobile">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
@@ -64,6 +63,16 @@
                 <action android:name="com.tomsksmarttech.ALARM_ACTION" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" /> <!-- Для перезапуска после ребута -->
             </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".SensorWidget"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/sensor_widget_info" />
         </receiver>
         <service
         android:name="androidx.work.impl.foreground.SystemForegroundService"

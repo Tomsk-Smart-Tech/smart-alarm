@@ -27,6 +27,7 @@ class AlarmReceiver : BroadcastReceiver() {
         if (intent.action == ALARM_TRIGGERED) {
 
             mqttService.init(context)
+            Log.d("MQTT_SRV", "init from receiver")
             mqttService.subscribedTopics.add(CHECK_TOPIC)
 
             handleAlarmTrigger(context, intent)
